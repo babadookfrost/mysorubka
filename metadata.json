@@ -1,0 +1,6 @@
+{
+  "name": "Мясорубка",
+  "description": "2D top-down survival roguelike shooter where weapons unlock as you progress and time moves when you move.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

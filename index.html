@@ -128,6 +128,34 @@
     pointer-events: none;
   }
 
+  #weapon-choice-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(3,3,6,0.94); display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: 16px; z-index: 20; pointer-events: auto;
+  }
+  #weapon-choice-overlay.active { display: flex; }
+  #wc-title { color: #F5C518; font-size: 30px; font-weight: bold; letter-spacing: 2px; margin-bottom: 4px; }
+  #wc-sub { color: #A8A196; font-size: 14px; margin-bottom: 22px; text-align: center; }
+  #wc-cards { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; max-width: 900px; }
+  .wc-card {
+    width: 240px; background: rgba(18,22,34,0.92); border: 1px solid #2A2F3C; border-radius: 14px;
+    padding: 16px; cursor: pointer; transition: transform 0.09s, border-color 0.09s;
+    display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+  }
+  .wc-card:hover { transform: scale(1.04); border-color: #F5C518; box-shadow: 0 0 22px rgba(245,197,24,0.25); }
+  .wc-card .wc-type { font-size: 11px; letter-spacing: 2px; font-weight: bold; }
+  .wc-card.evolve { border-color: #FFD700; background: linear-gradient(160deg, rgba(255,215,0,0.16), rgba(255,60,0,0.10)); }
+  .wc-card.evolve .wc-type { color: #FFD700; }
+  .wc-card.upgrade .wc-type { color: #5AD1FF; }
+  .wc-card.new .wc-type { color: #F5C518; }
+  .wc-card .wc-icon { font-size: 46px; }
+  .wc-card .wc-name { font-size: 16px; font-weight: bold; color: #E8E2D0; }
+  .wc-card .wc-desc { font-size: 12px; color: #A8A196; line-height: 1.35; }
+  .wc-card .wc-sub { font-size: 11px; color: #777; }
+  .wc-card .wc-level { font-size: 11px; color: #5AD1FF; margin-top: 4px; }
+  .wc-card .wc-evo-combo { font-size: 11px; color: #FFD700; }
+
   #upgrade-overlay {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(5,5,8,0.92); display: none;
@@ -357,6 +385,11 @@
       <button id="submit-score">OK</button>
     </div>
   </div>
+  <div id="weapon-choice-overlay">
+    <div id="wc-title">УРОВЕНЬ ВЫШЕ!</div>
+    <div id="wc-sub">Выбери, чем усилиться:</div>
+    <div id="wc-cards"></div>
+  </div>
   <div id="upgrade-overlay">
     <div id="upgrade-title">ДЕРЕВО НАВЫКОВ</div>
     <div id="upgrade-sub">Выбери ветку — в конце каждой тебя ждёт ИМБОВАЯ ФОРМА</div>
@@ -414,24 +447,67 @@
 //  GAME CONFIG
 // ============================================================
 const TILE = 80;
-const MAP_W = 48;
-const MAP_H = 48;
+const MAP_W = 60;
+const MAP_H = 60;
 const BLOCK = 6;
 const MAP_PX_W = MAP_W * TILE;
 const MAP_PX_H = MAP_H * TILE;
 
-const WEAPON_POOL = ['pistol','shotgun','smg','lmg','bow','rocket','flamethrower','railgun'];
+// ============================================================
+//  WEAPONS v2 — Vampire Survivors style
+//  10 base weapons + 10 evolutions (combo of two base at max level)
+// ============================================================
+const MAX_WEAPON_LEVEL = 5;
+const MAX_WEAPON_SLOTS = 6;
 
 const WEAPONS = {
-  pistol:  { id:'pistol', name:'Пистолет', icon:'◆', cd:0.30, pellets:3, spread:0.06, jitter:0, speed:1200, dmg:1, ammoMax:6,  reload:1.4, pierce:1, auto:false, splash:0 },
-  shotgun: { id:'shotgun', name:'Дробовик', icon:'▲', cd:0.85, pellets:7, spread:0.22, jitter:0.04, speed:900, dmg:1, ammoMax:2,  reload:1.8, pierce:1, auto:false, splash:0 },
-  smg:     { id:'smg', name:'Автомат', icon:'■', cd:0.10, pellets:1, spread:0, jitter:0.07, speed:1300, dmg:1, ammoMax:30, reload:1.6, pierce:1, auto:true, splash:0 },
-  lmg:     { id:'lmg', name:'Пулемёт', icon:'●', cd:0.06, pellets:1, spread:0, jitter:0.10, speed:1300, dmg:1, ammoMax:80, reload:2.4, pierce:1, auto:true, splash:0 },
-  bow:     { id:'bow', name:'Лук', icon:'➤', cd:0.55, pellets:1, spread:0, jitter:0, speed:1000, dmg:3, ammoMax:5,  reload:1.0, pierce:99, auto:false, splash:0 },
-  rocket:  { id:'rocket', name:'Гранатомёт', icon:'✹', cd:0.90, pellets:1, spread:0, jitter:0, speed:800, dmg:4, ammoMax:4,  reload:2.2, pierce:1, auto:false, splash:120 },
-  flamethrower: { id:'flamethrower', name:'Огнемёт', icon:'✦', cd:0.07, pellets:1, spread:0.10, jitter:0.14, speed:700, dmg:1, ammoMax:60, reload:2.0, pierce:1, auto:true, splash:55 },
-  railgun: { id:'railgun', name:'Рельсотрон', icon:'✚', cd:1.20, pellets:1, spread:0, jitter:0, speed:2400, dmg:6, ammoMax:4, reload:2.2, pierce:99, auto:false, splash:0 }
+  // ---------- BASE WEAPONS (10) ----------
+  pistol: { id:'pistol', name:'Пистолет', icon:'◆', color:'#F5C518', cd:0.30, pellets:1, spread:0.02, jitter:0.06, speed:1200, dmg:1, pierce:1, splash:0, slow:0, chain:0, dot:0, dotDur:0, auto:true,
+            evolve:'gauss', desc:'Точные быстрые пули. База каждой сборки.' },
+  shotgun: { id:'shotgun', name:'Дробовик', icon:'▲', color:'#FF8A3C', cd:0.85, pellets:6, spread:0.22, jitter:0.05, speed:900, dmg:1, pierce:1, splash:0, slow:0, chain:0, dot:0, dotDur:0, auto:true,
+            evolve:'nova', desc:'Веер дроби в упор. Мощный вблизи.' },
+  smg: { id:'smg', name:'Автомат', icon:'■', color:'#5AD1FF', cd:0.10, pellets:1, spread:0.03, jitter:0.08, speed:1300, dmg:1, pierce:1, splash:0, slow:0, chain:0, dot:0, dotDur:0, auto:true,
+            evolve:'gatling', desc:'Шквальный огонь. Держи и стреляй.' },
+  lmg: { id:'lmg', name:'Пулемёт', icon:'●', color:'#4CAF50', cd:0.055, pellets:1, spread:0.05, jitter:0.11, speed:1300, dmg:1, pierce:1, splash:0, slow:0, chain:0, dot:0, dotDur:0, auto:true,
+            evolve:'gatling', desc:'Ураган свинца. Мелкий, но очень частый.' },
+  bow: { id:'bow', name:'Лук', icon:'➤', color:'#C9A227', cd:0.55, pellets:1, spread:0, jitter:0, speed:1000, dmg:3, pierce:99, splash:0, slow:0, chain:0, dot:0, dotDur:0, auto:true,
+            evolve:'crossbow', desc:'Стрелы пронзают толпу насквозь.' },
+  rocket: { id:'rocket', name:'Гранатомёт', icon:'✹', color:'#FF6A00', cd:0.90, pellets:1, spread:0, jitter:0.02, speed:800, dmg:4, pierce:1, splash:120, slow:0, chain:0, dot:0, dotDur:0, auto:true,
+            evolve:'nova', desc:'Ракеты с мощным взрывом по площади.' },
+  flamethrower: { id:'flamethrower', name:'Огнемёт', icon:'✦', color:'#FFB300', cd:0.06, pellets:1, spread:0.12, jitter:0.15, speed:700, dmg:1, pierce:1, splash:55, slow:0, chain:0, dot:1, dotDur:3, auto:true,
+            evolve:'hellfire', desc:'Огненный конус. Поджигает врагов.' },
+  railgun: { id:'railgun', name:'Рельсотрон', icon:'✚', color:'#FF4D6D', cd:1.20, pellets:1, spread:0, jitter:0, speed:2400, dmg:6, pierce:99, splash:0, slow:0, chain:0, dot:0, dotDur:0, auto:true,
+            evolve:'crossbow', desc:'Молниеносный луч. Пронзает всё.' },
+  frost: { id:'frost', name:'Ледяная пушка', icon:'❄', color:'#7FE3FF', cd:0.45, pellets:1, spread:0.04, jitter:0.05, speed:950, dmg:2, pierce:1, splash:0, slow:0.45, chain:0, dot:0, dotDur:0, auto:true,
+            evolve:'blizzard', desc:'Замораживает врагов на месте.' },
+  volt: { id:'volt', name:'Молния', icon:'⚡', color:'#B18CFF', cd:0.50, pellets:1, spread:0, jitter:0, speed:1400, dmg:2, pierce:1, splash:0, slow:0, chain:3, dot:0, dotDur:0, auto:true,
+            evolve:'thunder', desc:'Электрический разряд бьёт по цепочке.' },
+
+  // ---------- EVOLUTIONS (10) — replace both base weapons when maxed ----------
+  gauss: { id:'gauss', name:'ГАУСС-ПУШКА', icon:'☄', color:'#FFD700', cd:0.16, pellets:1, spread:0, jitter:0.02, speed:2600, dmg:5, pierce:99, splash:0, slow:0, chain:0, dot:0, dotDur:0, auto:true,
+            combo:['pistol','railgun'], desc:'Рельсотрон с темпом пистолета. Уничтожает всё на линии.' },
+  nova: { id:'nova', name:'СВЕРХНОВА', icon:'☀', color:'#FF9A2E', cd:0.65, pellets:9, spread:0.30, jitter:0.06, speed:950, dmg:3, pierce:1, splash:150, slow:0, chain:0, dot:0, dotDur:0, auto:true,
+            combo:['shotgun','rocket'], desc:'Веер из взрывающихся снарядов. Стена огня.' },
+  gatling: { id:'gatling', name:'ГАТЛИНГ', icon:'🛸', color:'#00E5A0', cd:0.030, pellets:1, spread:0.06, jitter:0.12, speed:1500, dmg:1, pierce:2, splash:0, slow:0, chain:0, dot:0, dotDur:0, auto:true,
+            combo:['smg','lmg'], desc:'Свинцовый дождь. Скорострельность за гранью.' },
+  crossbow: { id:'crossbow', name:'АРБАЛЕТ', icon:'➹', color:'#E8C84A', cd:0.42, pellets:3, spread:0.06, jitter:0.03, speed:1600, dmg:4, pierce:99, splash:0, slow:0, chain:0, dot:0, dotDur:0, auto:true,
+            combo:['bow','railgun'], desc:'Три пронзающих болта за раз.' },
+  hellfire: { id:'hellfire', name:'АДСКОЕ ПЛАМЯ', icon:'☠', color:'#FF3D00', cd:0.05, pellets:1, spread:0.14, jitter:0.16, speed:800, dmg:2, pierce:1, splash:80, slow:0, chain:0, dot:2, dotDur:5, auto:true,
+            combo:['flamethrower','rocket'], desc:'Пылающие ракеты. Поджигает и взрывает.' },
+  blizzard: { id:'blizzard', name:'МЕТЕЛЬ', icon:'🌨', color:'#9BE7FF', cd:0.14, pellets:4, spread:0.34, jitter:0.10, speed:1100, dmg:2, pierce:3, splash:0, slow:0.65, chain:0, dot:0, dotDur:0, auto:true,
+            combo:['frost','smg'], desc:'Ледяные осколки веером. Всё замерзает.' },
+  thunder: { id:'thunder', name:'ГРОЗА', icon:'🌩', color:'#C9A9FF', cd:0.34, pellets:3, spread:0.14, jitter:0.05, speed:1500, dmg:3, pierce:1, splash:0, slow:0, chain:5, dot:0, dotDur:0, auto:true,
+            combo:['volt','shotgun'], desc:'Веер молний с мощной цепной реакцией.' },
+  doomsday: { id:'doomsday', name:'СУДНЫЙ ДЕНЬ', icon:'💥', color:'#FF2D55', cd:0.60, pellets:1, spread:0, jitter:0.02, speed:850, dmg:6, pierce:1, splash:200, slow:0, chain:2, dot:1, dotDur:2, auto:true,
+            combo:['rocket','volt'], desc:'Гигантские взрывы с цепной молнией.' },
+  frostfire: { id:'frostfire', name:'ЛЕДЯНОЕ ПЛАМЯ', icon:'🔮', color:'#6FD8FF', cd:0.06, pellets:1, spread:0.12, jitter:0.14, speed:750, dmg:2, pierce:1, splash:65, slow:0.5, chain:0, dot:1, dotDur:4, auto:true,
+            combo:['frost','flamethrower'], desc:'Холодный огонь: замедляет и жжёт.' },
+  singularity: { id:'singularity', name:'СИНГУЛЯРНОСТЬ', icon:'🕳', color:'#FFFFFF', cd:0.50, pellets:1, spread:0, jitter:0, speed:1800, dmg:7, pierce:99, splash:90, slow:0.3, chain:4, dot:0, dotDur:0, auto:true,
+            combo:['railgun','volt'], desc:'Луч с мини-взрывами и цепной молнией.' }
 };
+
+const BASE_WEAPON_IDS = Object.keys(WEAPONS).filter(id => !WEAPONS[id].combo);
+const WEAPON_POOL = BASE_WEAPON_IDS;
 
 const ENEMY_BASE = {
   melee:   { hp:1, speed:160, r:16, fireCd:1.6, bulletSpeed:500 },
@@ -540,47 +616,137 @@ function generateMap() {
   const grid = new Int32Array(MAP_W * MAP_H);
   const idx = (x,y) => y * MAP_W + x;
 
+  // Fill everything with walls
   for (let y = 0; y < MAP_H; y++) {
     for (let x = 0; x < MAP_W; x++) {
-      const edge = x === 0 || y === 0 || x === MAP_W - 1 || y === MAP_H - 1;
-      grid[idx(x,y)] = edge ? 1 : 0;
+      grid[idx(x,y)] = 1;
     }
   }
 
-  const blocksX = Math.ceil(MAP_W / BLOCK);
-  const blocksY = Math.ceil(MAP_H / BLOCK);
-
-  for (let by = 0; by < blocksY; by++) {
-    for (let bx = 0; bx < blocksX; bx++) {
-      if (Math.random() > 0.55) continue;
-      const pattern = Math.random();
-      const y0 = by * BLOCK + 2;
-      const y1 = Math.min(by * BLOCK + BLOCK, MAP_H - 1);
-      const x0 = bx * BLOCK + 2;
-      const x1 = Math.min(bx * BLOCK + BLOCK, MAP_W - 1);
-      for (let y = y0; y < y1; y++) {
-        for (let x = x0; x < x1; x++) {
-          let wall = false;
-          if (pattern < 0.4) wall = Math.random() < 0.7;
-          else if (pattern < 0.7) wall = (x + y) % 2 === 0;
-          else wall = Math.random() < 0.35;
-          if (wall) grid[idx(x,y)] = 1;
-        }
+  // Recursive backtracker maze: carve passages on odd coordinates
+  const carve = (x, y) => {
+    grid[idx(x,y)] = 0;
+    const dirs = [[2,0],[-2,0],[0,2],[0,-2]].sort(() => Math.random() - 0.5);
+    for (const [dx, dy] of dirs) {
+      const nx = x + dx, ny = y + dy;
+      if (nx > 0 && ny > 0 && nx < MAP_W - 1 && ny < MAP_H - 1 && grid[idx(nx,ny)] === 1) {
+        grid[idx(x + dx/2, y + dy/2)] = 0;  // knock down the wall between
+        carve(nx, ny);
       }
     }
+  };
+
+  // Start carving from a few random seeds so the maze is open, not a single corridor
+  const seeds = [];
+  const numSeeds = 14;
+  for (let i = 0; i < numSeeds; i++) {
+    seeds.push([1 + 2 * Math.floor(Math.random() * (MAP_W / 2 - 1)), 1 + 2 * Math.floor(Math.random() * (MAP_H / 2 - 1))]);
+  }
+  for (const [sx, sy] of seeds) {
+    if (grid[idx(sx,sy)] === 1) carve(sx, sy);
   }
 
-  const cx = Math.floor(MAP_W / 2);
-  const cy = Math.floor(MAP_H / 2);
-  for (let y = cy - 3; y <= cy + 3; y++) {
-    for (let x = cx - 3; x <= cx + 3; x++) {
-      if (x > 0 && y > 0 && x < MAP_W - 1 && y < MAP_H - 1) {
+  // Punch random rooms to open the maze up
+  const numRooms = 10 + Math.floor(Math.random() * 6);
+  for (let i = 0; i < numRooms; i++) {
+    const rx = 3 + Math.floor(Math.random() * (MAP_W - 6));
+    const ry = 3 + Math.floor(Math.random() * (MAP_H - 6));
+    const rw = 2 + Math.floor(Math.random() * 4);
+    const rh = 2 + Math.floor(Math.random() * 4);
+    for (let y = ry; y < ry + rh && y < MAP_H - 2; y++) {
+      for (let x = rx; x < rx + rw && x < MAP_W - 2; x++) {
         grid[idx(x,y)] = 0;
       }
     }
   }
 
-  return { grid, spawnX: (cx + 0.5) * TILE, spawnY: (cy + 0.5) * TILE };
+  // Guarantee connectivity: BFS flood from center, knock down walls on the frontier
+  const cx = Math.floor(MAP_W / 2);
+  const cy = Math.floor(MAP_H / 2);
+  grid[idx(cx, cy)] = 0;
+  const visited = new Int8Array(MAP_W * MAP_H);
+  const frontier = [[cx, cy]];
+  visited[idx(cx, cy)] = 1;
+  while (frontier.length > 0) {
+    const [fx, fy] = frontier.shift();
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = fx + dx, ny = fy + dy;
+      if (nx <= 0 || ny <= 0 || nx >= MAP_W - 1 || ny >= MAP_H - 1) continue;
+      if (visited[idx(nx,ny)]) continue;
+      if (grid[idx(nx,ny)] === 0) {
+        visited[idx(nx,ny)] = 1;
+        frontier.push([nx, ny]);
+      } else if (Math.random() < 0.25) {
+        // Knock down a wall to open a new passage
+        grid[idx(nx,ny)] = 0;
+        visited[idx(nx,ny)] = 1;
+        frontier.push([nx, ny]);
+      }
+    }
+  }
+
+  // Spawn near center
+  const spawnX = (cx + 0.5) * TILE;
+  const spawnY = (cy + 0.5) * TILE;
+
+  // Exit: far corner from spawn — the goal of the floor
+  const exitSpot = { x: MAP_W - 3, y: MAP_H - 3 };
+  grid[idx(exitSpot.x, exitSpot.y)] = 0;
+  grid[idx(exitSpot.x - 1, exitSpot.y)] = 0;
+  const exit = { x: (exitSpot.x + 0.5) * TILE, y: (exitSpot.y + 0.5) * TILE };
+
+  // Teleports: 8-12 scattered — visually identical, some help, some betray
+  const teleports = [];
+  const numTel = 8 + Math.floor(Math.random() * 5);
+  for (let i = 0; i < numTel; i++) {
+    const tx = 2 + Math.floor(Math.random() * (MAP_W - 4));
+    const ty = 2 + Math.floor(Math.random() * (MAP_H - 4));
+    if (grid[idx(tx, ty)] === 1) continue;
+    if (Math.hypot(tx - cx, ty - cy) < 4) continue;  // not near spawn
+    // Kind is hidden: good ones teleport closer to exit, bad ones random
+    const kind = Math.random() < 0.5 ? 'good' : 'trap';
+    teleports.push({ x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, kind });
+  }
+
+  // Chests: 6-9 hidden reward boxes scattered in the maze
+  const chests = [];
+  const numChests = 6 + Math.floor(Math.random() * 4);
+  for (let i = 0; i < numChests * 5 && chests.length < numChests; i++) {
+    const tx = 2 + Math.floor(Math.random() * (MAP_W - 4));
+    const ty = 2 + Math.floor(Math.random() * (MAP_H - 4));
+    if (grid[idx(tx, ty)] === 1) continue;
+    const wx = (tx + 0.5) * TILE, wy = (ty + 0.5) * TILE;
+    if (Math.hypot(wx - spawnX, wy - spawnY) < 420) continue;   // not near spawn
+    if (Math.hypot(wx - exit.x, wy - exit.y) < 260) continue;   // not near exit
+    if (teleports.some(tp => Math.hypot(wx - tp.x, wy - tp.y) < 220)) continue;
+    if (chests.some(c => Math.hypot(wx - c.x, wy - c.y) < 220)) continue;
+    chests.push({ x: wx, y: wy, opened: false });
+  }
+
+  // Guard spot: mini-boss protects the exit — a floor tile near the gate
+  let guardSpot = null;
+  for (let r = 2; r <= 5 && !guardSpot; r++) {
+    for (let ty = Math.max(1, exitSpot.y - r); ty <= Math.min(MAP_H - 2, exitSpot.y + r) && !guardSpot; ty++) {
+      for (let tx = Math.max(1, exitSpot.x - r); tx <= Math.min(MAP_W - 2, exitSpot.x + r) && !guardSpot; tx++) {
+        if (grid[idx(tx, ty)] === 0) guardSpot = { x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE };
+      }
+    }
+  }
+  if (!guardSpot) guardSpot = { x: exit.x - TILE * 2, y: exit.y };
+
+  // Fog of war: explored tiles revealed as the player explores
+  const explored = new Uint8Array(MAP_W * MAP_H);
+  // Reveal the spawn area immediately
+  const sptx = Math.floor(spawnX / TILE), spty = Math.floor(spawnY / TILE);
+  for (let ty = spty - 6; ty <= spty + 6; ty++) {
+    for (let tx = sptx - 6; tx <= sptx + 6; tx++) {
+      if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) continue;
+      const ddx = tx - sptx, ddy = ty - spty;
+      if (ddx * ddx + ddy * ddy <= 36) explored[ty * MAP_W + tx] = 1;
+    }
+  }
+
+  return { grid, spawnX, spawnY, exit, teleports, chests, explored, guardSpot };
 }
 
 class GameMap {
@@ -724,6 +890,15 @@ function equipSkin(id) {
 }
 
 // ============================================================
+//  PASSIVE ITEMS (drop from labyrinth chests)
+// ============================================================
+const PASSIVES = {
+  boots: { id: 'boots', name: 'САПОГИ СКОРОСТИ', icon: '👢', color: '#5AD1FF', max: 3, desc: '+12% к скорости движения' },
+  heart: { id: 'heart', name: 'СЕРДЦЕ', icon: '❤', color: '#FF4D6D', max: 3, desc: '+2 к макс. HP и лечение 2' },
+  coin:  { id: 'coin',  name: 'МОНЕТА',  icon: '🪙', color: '#F5C518', max: 3, desc: '+15% к счёту и +150 очков' }
+};
+
+// ============================================================
 //  GAME STATE
 // ============================================================
 class GameState {
@@ -756,6 +931,8 @@ class GameState {
     this.flowDist = null;
     this.flowTx = -1;
     this.flowTy = -1;
+    this.guard = null;
+    this.guardDefeated = false;
 
     // Input
     this.joystickDX = 0;
@@ -785,10 +962,10 @@ class GameState {
     this.xpOrbs = [];
     this.mapData = generateMap();
     this.player = { x: this.mapData.spawnX, y: this.mapData.spawnY, r: 14, speed: 280,
-      weaponId: 'pistol', ammo: 6, reloading: 0, cd: 0, dashCd: 0, dashT: 0,
-      dashDX: 0, dashDY: 0, dashUnlocked: false, invuln: 0,
+      weapons: [{ id: 'pistol', level: 1 }],
+      dashCd: 0, dashT: 0, dashDX: 0, dashDY: 0, dashUnlocked: false, invuln: 0,
       hp: 10, maxHp: 10, xp: 0, level: 1, xpToNext: 8, skillPoints: 0,
-      skillRanks: {}, form: null };
+      skillRanks: {}, form: null, passives: { boots: 0, heart: 0, coin: 0 } };
     this.xpOrbs = [];
     this.regenTimer = 0;
     this.applyLevelStart();
@@ -801,6 +978,8 @@ class GameState {
     this.flowDist = null;
     this.flowTx = -1;
     this.flowTy = -1;
+    this.guard = null;
+    this.guardDefeated = false;
     this.nameEntered = false;
   }
 
@@ -835,10 +1014,44 @@ class GameState {
     this.globalPower = 1;
     this.scaleT = 5;
     this.boss = null;
-    this.player.weaponId = cfg.weaponOrder[0];
-    const w = WEAPONS[this.player.weaponId];
-    this.player.ammo = w.ammoMax;
-    this.player.reloading = 0;
+  }
+
+  // Find a safe floor tile near the target point for teleport landing
+  findTeleportDest(tx, ty) {
+    const map = new GameMap(this.mapData.grid);
+    const grid = this.mapData.grid;
+    for (let a = 0; a < 40; a++) {
+      const nx = tx + (Math.random() - 0.5) * 400;
+      const ny = ty + (Math.random() - 0.5) * 400;
+      const tx2 = Math.floor(nx / TILE), ty2 = Math.floor(ny / TILE);
+      if (tx2 < 1 || ty2 < 1 || tx2 >= MAP_W - 1 || ty2 >= MAP_H - 1) continue;
+      if (grid[ty2 * MAP_W + tx2] === 1) continue;
+      if (map.circleBlocked(nx, ny, 14)) continue;
+      return [nx, ny];
+    }
+    return [this.mapData.spawnX, this.mapData.spawnY];
+  }
+
+  // Descend to the next floor: new maze, reset waves, keep weapons
+  nextFloor() {
+    this.level++;
+    this.burst(this.player.x, this.player.y, 40, 0xFF9BE7FF, 400);
+    this.ring(this.player.x, this.player.y, 0xFF9BE7FF, 140, 0.7, 4);
+    this.mapData = generateMap();
+    this.player.x = this.mapData.spawnX;
+    this.player.y = this.mapData.spawnY;
+    this.enemies = [];
+    this.bullets = [];
+    this.xpOrbs = [];
+    this.applyLevelStart();
+    this.camera.x = this.player.x - this.viewW / 2;
+    this.camera.y = this.player.y - this.viewH / 2;
+    this.boss = null;
+    this.guard = null;
+    this.guardDefeated = false;
+    this.banners.push({ title: 'ЭТАЖ ' + (this.level + 1), subtitle: 'НАЙДИ ВЫХОД В ЛАБИРИНТЕ', color: 0xFF9BE7FF, t: 0, duration: 2.0 });
+    this.flash = Math.max(this.flash, 0.4);
+    Sfx.form();
   }
 
   onBossDefeated() {
@@ -865,19 +1078,80 @@ class GameState {
     this.banners.push({ title: 'УРОВЕНЬ ПРОЙДЕН', subtitle: `ПЕРЕХОД К ${this.levelCfg.name.toUpperCase()}`, color: 0xFF5AD1FF, t: 0, duration: 1.9 });
   }
 
-  maybeUnlockWeapon() {
-    const cfg = this.levelCfg;
-    const idx = cfg.weaponWaves.indexOf(this.wave);
-    if (idx === -1) return;
-    const weaponId = cfg.weaponOrder[idx];
-    if (this.player.weaponId === weaponId) return;
-    this.player.weaponId = weaponId;
-    const w = WEAPONS[weaponId];
-    this.player.ammo = w.ammoMax;
-    this.player.reloading = 0;
+  weaponLevel(id) {
+    const wp = this.player.weapons.find(w => w.id === id);
+    return wp ? wp.level : 0;
+  }
+  hasWeapon(id) {
+    return this.player.weapons.some(w => w.id === id);
+  }
+  addWeapon(id) {
+    if (this.hasWeapon(id)) return;
+    this.player.weapons.push({ id, level: 1, cd: 0 });
+    const w = WEAPONS[id];
     this.banners.push({ title: 'НОВОЕ ОРУЖИЕ', subtitle: `${w.icon}  ${w.name.toUpperCase()}`, color: 0xFFF5C518, t: 0, duration: 1.9 });
     this.flash = Math.max(this.flash, 0.5);
     this.burst(this.player.x, this.player.y, 26, 0xFFF5C518, 260);
+    Sfx.levelUp();
+  }
+  upgradeWeapon(id) {
+    const wp = this.player.weapons.find(w => w.id === id);
+    if (!wp || wp.level >= MAX_WEAPON_LEVEL) return;
+    wp.level++;
+    const w = WEAPONS[id];
+    this.banners.push({ title: 'УЛУЧШЕНО', subtitle: `${w.icon} ${w.name.toUpperCase()} → УРОВЕНЬ ${wp.level}`, color: 0xFF5AD1FF, t: 0, duration: 1.6 });
+    this.burst(this.player.x, this.player.y, 18, 0xFF5AD1FF, 220);
+    Sfx.buy();
+  }
+  evolveWeapon(evoId) {
+    const evo = WEAPONS[evoId];
+    if (!evo || !evo.combo) return;
+    // Remove both base weapons, add the evolution
+    this.player.weapons = this.player.weapons.filter(w => !evo.combo.includes(w.id));
+    this.player.weapons.push({ id: evoId, level: 1, cd: 0 });
+    this.banners.push({ title: 'ЭВОЛЮЦИЯ!', subtitle: `${evo.icon}  ${evo.name.toUpperCase()}`, color: 0xFFFFD700, t: 0, duration: 2.2 });
+    this.flash = Math.max(this.flash, 0.6);
+    this.ring(this.player.x, this.player.y, 0xFFFFD700, 180, 0.8, 5);
+    this.burst(this.player.x, this.player.y, 40, 0xFFFFD700, 420);
+    this.beams(this.player.x, this.player.y, 0xFFFFD700, 14);
+    Sfx.form();
+  }
+  // Can this weapon evolve right now? (both combo weapons at max level)
+  canEvolve(evoId) {
+    const evo = WEAPONS[evoId];
+    if (!evo || !evo.combo) return false;
+    return evo.combo.every(id => this.weaponLevel(id) >= MAX_WEAPON_LEVEL);
+  }
+
+  openChest(ch) {
+    if (ch.opened) return;
+    ch.opened = true;
+    const p = this.player;
+    // Random passive: weighted toward the least-owned kind (helps collect all 3)
+    const counts = [p.passives.boots, p.passives.heart, p.passives.coin];
+    const minCount = Math.min(...counts);
+    const pool = ['boots', 'heart', 'coin'].filter((id, i) => counts[i] === minCount);
+    const id = pool[Math.floor(Math.random() * pool.length)];
+    const item = PASSIVES[id];
+    // Opening effects: burst + ring + beams + flash + sound
+    this.burst(ch.x, ch.y, 26, 0xFFF5C518, 320);
+    this.ring(ch.x, ch.y, 0xFFF5C518, 90, 0.6, 4);
+    this.beams(ch.x, ch.y, 0xFFF5C518, 12);
+    this.flash = Math.max(this.flash, 0.35);
+    Sfx.buy();
+    if (p.passives[id] >= item.max) {
+      // Already maxed: consolation XP
+      this.floatText(ch.x, ch.y - 26, 'МАКСИМУМ +4 XP', 0xFF5AD1FF, 14);
+      this.dropXp(ch.x, ch.y, 4);
+      return;
+    }
+    p.passives[id]++;
+    if (id === 'heart') {
+      p.maxHp += 2;
+      p.hp = Math.min(p.maxHp, p.hp + 2);
+    }
+    this.banners.push({ title: 'СУНДУК', subtitle: `${item.icon} ${item.name.toUpperCase()} +${p.passives[id]}`, color: 0xFFF5C518, t: 0, duration: 1.8 });
+    this.floatText(ch.x, ch.y - 26, item.icon + ' ' + item.name, 0xFFF5C518, 15);
   }
 
   maybeUnlockDash() {
@@ -890,42 +1164,43 @@ class GameState {
 
   fireWeapon(aimWX, aimWY) {
     const p = this.player;
-    const w = WEAPONS[p.weaponId];
-    if (p.cd > 0 || p.ammo <= 0 || p.reloading > 0) return;
-    p.cd = w.cd;
-    p.ammo--;
-    this.shotSlowmo = 0.5;
-    if (p.ammo === 0) p.reloading = w.reload;
-
     const ang = Math.atan2(aimWY - p.y, aimWX - p.x);
-    // Perk bonuses
-    const dmgMul = this.getDmgMul();
-    const crit = Math.random() < this.getCritChance() ? 3 : 1;
-    const extraPellets = this.getMultishot();
-    const splashBonus = this.getRank('splash') * 0.20 + 1;
-    const total = w.pellets + extraPellets;
-    const mid = (total - 1) / 2;
-    for (let i = 0; i < total; i++) {
-      const a = ang + (i - mid) * w.spread + (Math.random() - 0.5) * w.jitter;
-      this.bullets.push({
-        x: p.x, y: p.y, vx: Math.cos(a) * w.speed, vy: Math.sin(a) * w.speed,
-        r: w.splash > 0 ? 7 : 4, friendly: true, dmg: Math.max(1, Math.round(w.dmg * dmgMul * crit)),
-        pierce: w.pierce, splash: Math.round(w.splash * splashBonus), dead: false,
-        chain: this.getChainTargets(), crit: crit > 1
+    this.shotSlowmo = 0.5;
+    // All equipped weapons fire simultaneously (Vampire Survivors style)
+    for (const wp of p.weapons) {
+      if (wp.cd > 0) continue;
+      const w = WEAPONS[wp.id];
+      if (!w) continue;
+      wp.cd = w.cd * (1 - 0.04 * (wp.level - 1));  // faster at higher levels
+      const levelMul = 1 + 0.35 * (wp.level - 1);  // +35% dmg per level
+      const dmgMul = this.getDmgMul();
+      const crit = Math.random() < this.getCritChance() ? 3 : 1;
+      const extraPellets = this.getMultishot();
+      const splashBonus = this.getRank('splash') * 0.20 + 1;
+      const total = w.pellets + extraPellets;
+      const mid = (total - 1) / 2;
+      const dmg = Math.max(1, Math.round(w.dmg * levelMul * dmgMul * crit));
+      for (let i = 0; i < total; i++) {
+        const a = ang + (i - mid) * w.spread + (Math.random() - 0.5) * w.jitter;
+        this.bullets.push({
+          x: p.x, y: p.y, vx: Math.cos(a) * w.speed, vy: Math.sin(a) * w.speed,
+          r: w.splash > 0 ? 7 : 4, friendly: true, dmg,
+          pierce: w.pierce, splash: Math.round(w.splash * splashBonus), dead: false,
+          chain: w.chain || 0, crit: crit > 1,
+          slow: w.slow || 0, dot: w.dot || 0, dotDur: w.dotDur || 0
+        });
+      }
+      Sfx.shoot(wp.id);
+      this.particles.push({
+        x: p.x + Math.cos(ang) * 18, y: p.y + Math.sin(ang) * 18,
+        vx: Math.cos(ang) * 40, vy: Math.sin(ang) * 40,
+        life: 0.12, maxLife: 0.12, color: 0xFFFFF6C8, size: 10
       });
     }
-    Sfx.shoot(p.weaponId);
-    this.particles.push({
-      x: p.x + Math.cos(ang) * 18, y: p.y + Math.sin(ang) * 18,
-      vx: Math.cos(ang) * 40, vy: Math.sin(ang) * 40,
-      life: 0.12, maxLife: 0.12, color: 0xFFFFF6C8, size: 10
-    });
   }
 
   reloadWeapon() {
-    const p = this.player;
-    const w = WEAPONS[p.weaponId];
-    if (p.ammo < w.ammoMax && p.reloading <= 0) p.reloading = w.reload;
+    // No manual reload in multi-weapon system — weapons auto-fire on cooldown
   }
 
   tryDash() {
@@ -1134,6 +1409,18 @@ class GameState {
     this.shotSlowmo = Math.max(0, this.shotSlowmo - dt);
     const sdt = dt * this.timeScale;
 
+    // Fog of war: reveal explored tiles around the player each frame
+    const ptFog = { x: Math.floor(p.x / TILE), y: Math.floor(p.y / TILE) };
+    const visR = 6;
+    const exArr = this.mapData.explored;
+    for (let ty = ptFog.y - visR; ty <= ptFog.y + visR; ty++) {
+      for (let tx = ptFog.x - visR; tx <= ptFog.x + visR; tx++) {
+        if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) continue;
+        const ddx = tx - ptFog.x, ddy = ty - ptFog.y;
+        if (ddx * ddx + ddy * ddy <= visR * visR) exArr[ty * MAP_W + tx] = 1;
+      }
+    }
+
     // Camera
     const targetCamX = Math.max(0, Math.min(MAP_PX_W - this.viewW, p.x - this.viewW / 2));
     const targetCamY = Math.max(0, Math.min(MAP_PX_H - this.viewH, p.y - this.viewH / 2));
@@ -1141,17 +1428,11 @@ class GameState {
     this.camera.x += (targetCamX - this.camera.x) * ease;
     this.camera.y += (targetCamY - this.camera.y) * ease;
 
-    p.cd = Math.max(0, p.cd - dt);
-    if (p.reloading > 0) {
-      p.reloading -= dt;
-      if (p.reloading <= 0) {
-        p.ammo = WEAPONS[p.weaponId].ammoMax;
-      }
-    }
+    // Weapon cooldowns tick in real time (not slowed)
+    for (const wp of p.weapons) wp.cd = Math.max(0, wp.cd - dt);
 
     if (this.fireRequest) {
       this.fireWeapon(this.aimX, this.aimY);
-      if (!WEAPONS[p.weaponId].auto) this.fireRequest = false;
     }
 
     this.scaleT -= dt;
@@ -1160,7 +1441,6 @@ class GameState {
       this.globalPower = Math.min(3, this.globalPower * 1.07);
     }
 
-    this.maybeUnlockWeapon();
     this.maybeUnlockDash();
 
     // Spawn logic
@@ -1196,6 +1476,75 @@ class GameState {
       }
     }
     this.xpOrbs = this.xpOrbs.filter(o => o.life > 0);
+
+    // Chests: walk over one to open it
+    for (const ch of this.mapData.chests || []) {
+      if (ch.opened) continue;
+      if (Math.hypot(p.x - ch.x, p.y - ch.y) < 32) {
+        this.openChest(ch);
+      }
+    }
+
+    // Teleports: reach one and get flung somewhere — but where?
+    for (const tp of this.mapData.teleports) {
+      if (Math.hypot(p.x - tp.x, p.y - tp.y) < 26) {
+        // Consume the teleport so it doesn't fire repeatedly
+        tp.used = true;
+        this.burst(p.x, p.y, 24, 0xFFB18CFF, 320);
+        this.ring(p.x, p.y, 0xFFB18CFF, 80, 0.5, 3);
+        let dest;
+        if (tp.kind === 'good') {
+          // Good teleport: fling us toward the exit
+          const ex = this.mapData.exit.x, ey = this.mapData.exit.y;
+          const dx = ex - p.x, dy = ey - p.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          const jump = Math.min(dist * 0.55, 2600);
+          dest = this.findTeleportDest(p.x + dx / dist * jump, p.y + dy / dist * jump);
+        } else {
+          // Trap teleport: random corner of the map (deliberately far/awkward)
+          const corners = [
+            [MAP_PX_W * 0.15, MAP_PX_H * 0.15],
+            [MAP_PX_W * 0.85, MAP_PX_H * 0.15],
+            [MAP_PX_W * 0.15, MAP_PX_H * 0.85],
+            [MAP_PX_W * 0.85, MAP_PX_H * 0.85],
+            [MAP_PX_W * 0.5,  MAP_PX_H * 0.12],
+            [MAP_PX_W * 0.5,  MAP_PX_H * 0.88],
+            [MAP_PX_W * 0.12, MAP_PX_H * 0.5],
+            [MAP_PX_W * 0.88, MAP_PX_H * 0.5]
+          ];
+          const corner = corners[Math.floor(Math.random() * corners.length)];
+          dest = this.findTeleportDest(corner[0], corner[1]);
+        }
+        // All teleports look identical — the surprise is only revealed by where you land
+        p.x = dest[0]; p.y = dest[1];
+        this.camera.x = p.x - this.viewW / 2;
+        this.camera.y = p.y - this.viewH / 2;
+        this.burst(p.x, p.y, 24, 0xFFB18CFF, 320);
+        this.ring(p.x, p.y, 0xFFB18CFF, 80, 0.5, 3);
+        this.player.invuln = Math.max(this.player.invuln, 1.2);
+        Sfx.shoot('volt');
+        this.floatText(p.x, p.y - 22, tp.kind === 'good' ? 'ПОМОЩЬ' : 'ЛОВУШКА!', tp.kind === 'good' ? 0xFF9BE7FF : 0xFFFF3D00, 14);
+        break;
+      }
+    }
+
+    // Guard: the exit is protected — a mini-boss spawns when you approach
+    const ex = this.mapData.exit;
+    if (ex && !this.guard && !this.guardDefeated && Math.hypot(p.x - ex.x, p.y - ex.y) < 520) {
+      this.spawnGuard();
+    }
+    // Locked warning while standing at the gate with the guard alive
+    if (ex && this.guard && !this.guard.dead && Math.hypot(p.x - ex.x, p.y - ex.y) < 80) {
+      this.guardWarnT = (this.guardWarnT || 0) - dt;
+      if (this.guardWarnT <= 0) {
+        this.guardWarnT = 1.4;
+        this.floatText(ex.x, ex.y - 46, 'УБЕЙ СТРАЖА, ЧТОБЫ СПУСТИТЬСЯ!', 0xFFFF3B30, 13);
+      }
+    }
+    // Exit: reach it to descend to the next floor (only once the guard is dead)
+    if (ex && this.guardDefeated && Math.hypot(p.x - ex.x, p.y - ex.y) < 30) {
+      this.nextFloor();
+    }
 
     // Regen
     const regenRank = this.getRank('regen');
@@ -1271,12 +1620,6 @@ class GameState {
       }
     }
 
-    // Open skill tree if we have points
-    if (p.skillPoints > 0 && this.status === 'play') {
-      this.status = 'upgrade';
-      openUpgradeTree();
-    }
-
     // Update enemies (smart AI: flow-field pathfinding + separation + tactics)
     this.ensureFlowField();
     const enArr = currentEnemies.filter(x => !x.dead);
@@ -1309,7 +1652,21 @@ class GameState {
       if (e.dead) continue;
       e.flash = Math.max(0, e.flash - sdt * 4);
       if (e.frozenT > 0) e.frozenT -= dt;
-      const emul = e.frozenT > 0 ? 0 : (e.speedMul || 1);
+      // Burn DoT from fire weapons (ticks every second)
+      if (e.burnT > 0) {
+        e.burnT -= dt;
+        this.enemyBurnTick = (this.enemyBurnTick || 0) - dt;
+        if (this.enemyBurnTick <= 0) {
+          this.enemyBurnTick = 1;
+          e.hp -= e.burnDmg || 1;
+          this.burst(e.x, e.y, 4, 0xFFFF8800, 90);
+          this.floatText(e.x + (Math.random() - 0.5) * 10, e.y - e.r - 6, String(e.burnDmg || 1), 0xFFFF8800, 11);
+          if (e.hp <= 0) this.killEnemy(e);
+        }
+      }
+      // Slow effect (frost weapons) stacks with speedMul
+      if (e.slowT > 0) { e.slowT -= dt; }
+      const emul = e.frozenT > 0 ? 0 : (e.speedMul || 1) * (e.slowT > 0 ? (1 - e.slowAmt) : 1);
       const distP = Math.hypot(p.x - e.x, p.y - e.y);
       // Base heading: flow-field direction (walks around walls), fallback direct
       const fd = this.flowDir(e.x, e.y);
@@ -1317,7 +1674,33 @@ class GameState {
       let hx = fd ? fd.x : dirToP.x;
       let hy = fd ? fd.y : dirToP.y;
 
-      if (e.isBoss) {
+      if (e.isGuard) {
+        // Guardian of the exit: defends its post, leashed near the gate
+        const spot = this.mapData.guardSpot || { x: this.mapData.exit.x - TILE, y: this.mapData.exit.y };
+        const distSpot = Math.hypot(e.x - spot.x, e.y - spot.y);
+        let gx = hx, gy = hy;
+        if (distSpot > 330) {
+          // Too far from the gate: return to the post
+          gx = (spot.x - e.x) / distSpot;
+          gy = (spot.y - e.y) / distSpot;
+        } else if (distP < 260) {
+          // Hold the gate, keeping distance
+          gx = -dirToP.x; gy = -dirToP.y;
+        }
+        if (emul > 0) map.moveWithCollision(e, gx * e.speed * sdt * emul, gy * e.speed * sdt * emul);
+        // Ranged volley at the player
+        e.atkT -= sdt;
+        if (e.atkT <= 0 && distP < 640) {
+          e.atkT = 1.7;
+          const ba = Math.atan2(p.y - e.y, p.x - e.x);
+          const n = 3;
+          for (let k = -(n - 1) / 2; k <= (n - 1) / 2; k++) {
+            const a = ba + k * 0.13;
+            this.bullets.push({ x: e.x, y: e.y, vx: Math.cos(a) * 380, vy: Math.sin(a) * 380, r: 8, friendly: false, dmg: 1, pierce: 1, splash: 0, dead: false });
+          }
+          this.burst(e.x, e.y, 10, 0xFF4CAF50, 220);
+        }
+      } else if (e.isBoss) {
         // Boss phases: phase 2 (enrage) at HP <= 50% — faster, deadlier, spawns minions
         const phase2 = e.hp / e.maxHp <= 0.5;
         if (phase2 && e.phase !== 2) {
@@ -1441,7 +1824,7 @@ class GameState {
           e.flash = 1;
           if (e.hp <= 0) this.killEnemy(e);
         }
-        let contactDmg = e.isBoss ? 3 : (e.type === 'brute' ? 3 : e.type === 'tank' ? 2 : 1);
+        let contactDmg = e.isGuard ? 3 : (e.isBoss ? 3 : (e.type === 'brute' ? 3 : e.type === 'tank' ? 2 : 1));
         if (e.elite) {
           // Berserker elites hit twice as hard
           if (e.elite === ELITE_MODS.berserk) contactDmg *= 2;
@@ -1509,6 +1892,16 @@ class GameState {
                 // Elite shield: take half damage
                 e.hp -= e.elite && e.elite === ELITE_MODS.shield ? Math.max(1, Math.floor(b.dmg / 2)) : b.dmg;
                 e.flash = 1;
+                // Frost: slow the enemy
+                if (b.slow > 0) {
+                  e.slowT = 1.6;
+                  e.slowAmt = Math.max(e.slowAmt || 0, b.slow);
+                }
+                // Fire: apply burn DoT
+                if (b.dot > 0 && !e.isBoss) {
+                  e.burnT = Math.max(e.burnT || 0, b.dotDur);
+                  e.burnDmg = Math.max(e.burnDmg || 0, b.dot);
+                }
                 Sfx.hit();
                 this.floatText(e.x + (Math.random() - 0.5) * 14, e.y - e.r - 8, String(b.dmg), b.crit ? 0xFFFFD700 : 0xFFFFF6C8, b.crit ? 17 : 13);
                 // Critical hit flash: gold sparks + white sparks + shockwave ring
@@ -1597,6 +1990,25 @@ class GameState {
     }
   }
 
+  spawnGuard() {
+    if (this.guard || this.guardDefeated) return;
+    const d = DIFFICULTIES[Settings.difficulty] || DIFFICULTIES.normal;
+    const hp = Math.round((26 + this.level * 20) * d.hp);
+    const speed = Math.min(165, (95 + this.level * 7) * d.speed);
+    const spot = this.mapData.guardSpot || { x: this.mapData.exit.x - TILE, y: this.mapData.exit.y };
+    this.guard = {
+      x: spot.x, y: spot.y, r: 30, type: 'guard', hp, maxHp: hp,
+      speed, dead: false, flash: 0, isBoss: false, isGuard: true,
+      atkT: 1.2, burstCd: 0
+    };
+    this.enemies.push(this.guard);
+    this.banners.push({ title: 'СТРАЖ ВЫХОДА', subtitle: 'ПОБЕДИ ЕГО, ЧТОБЫ СПУСТИТЬСЯ НИЖЕ', color: 0xFF4CAF50, t: 0, duration: 2.2 });
+    this.ring(spot.x, spot.y, 0xFF4CAF50, 120, 0.7, 4);
+    this.burst(spot.x, spot.y, 30, 0xFF4CAF50, 320);
+    this.flash = Math.max(this.flash, 0.3);
+    Sfx.form();
+  }
+
   spawnEnemy() {
     const cfg = this.levelCfg;
     const type = cfg.enemyTypes[Math.floor(Math.random() * cfg.enemyTypes.length)];
@@ -1651,6 +2063,23 @@ class GameState {
       this.onBossDefeated();
       return;
     }
+    if (e.isGuard) {
+      this.kills += 8;
+      this.guard = null;
+      this.guardDefeated = true;
+      this.burst(e.x, e.y, 50, 0xFF4CAF50, 400);
+      this.ring(e.x, e.y, 0xFF4CAF50, 160, 0.9, 5);
+      this.beams(e.x, e.y, 0xFF4CAF50, 14);
+      this.floatText(e.x, e.y - 44, 'СТРАЖ ПОВЕРЖЕН!', 0xFF4CAF50, 18);
+      this.floatText(e.x, e.y - 22, '+8 XP', 0xFF5AD1FF, 14);
+      this.dropXp(e.x, e.y, 8);
+      this.banners.push({ title: 'ВЫХОД ОТКРЫТ', subtitle: 'СТРАЖ ПОВЕРЖЕН — СПУСКАЙСЯ', color: 0xFF4CAF50, t: 0, duration: 2.2 });
+      this.flash = Math.max(this.flash, 0.45);
+      // Reward chest left at the gate
+      this.mapData.chests.push({ x: e.x, y: e.y, opened: false });
+      Sfx.form();
+      return;
+    }
     this.kills++;
     // Kill effects: burst scaled by enemy type + shockwave + XP popup
     const killInfo = {
@@ -1692,14 +2121,71 @@ class GameState {
     while (p.xp >= p.xpToNext) {
       p.xp -= p.xpToNext;
       p.level++;
-      p.skillPoints++;
       p.xpToNext = Math.round(8 * Math.pow(1.4, p.level - 1));
-      this.banners.push({ title: 'УРОВЕНЬ ' + p.level, subtitle: '+1 ОЧКО НАВЫКА', color: 0xFF5AD1FF, t: 0, duration: 1.6 });
+      // Skill point every 3rd level (opened via HUD button)
+      if (p.level % 3 === 0) {
+        p.skillPoints++;
+        this.banners.push({ title: 'УРОВЕНЬ ' + p.level, subtitle: '+1 ОЧКО НАВЫКА', color: 0xFF5AD1FF, t: 0, duration: 1.6 });
+      }
       this.burst(p.x, p.y, 26, 0xFF5AD1FF, 260);
       this.ring(p.x, p.y, 0xFF5AD1FF, 110, 0.6, 4);
       this.flash = Math.max(this.flash, 0.35);
       Sfx.levelUp();
+      // Vampire Survivors style: pick a weapon upgrade
+      if (this.status === 'play') {
+        this.status = 'upgrade';
+        this.pendingWeaponChoice = this.generateWeaponChoices();
+        openWeaponChoice(this.pendingWeaponChoice);
+      }
     }
+  }
+
+  // Generate 3 random choices: new weapon / upgrade / evolution
+  generateWeaponChoices() {
+    const p = this.player;
+    const options = [];
+
+    // 1. Evolutions available right now (both combo weapons maxed)
+    for (const id of Object.keys(WEAPONS)) {
+      const w = WEAPONS[id];
+      if (w.combo && this.canEvolve(id) && !this.hasWeapon(id)) {
+        options.push({ type: 'evolve', id, label: 'ЭВОЛЮЦИЯ', sub: w.combo.map(c => WEAPONS[c].name).join(' + ') });
+      }
+    }
+
+    // 2. New weapons (if slots free)
+    if (p.weapons.length < MAX_WEAPON_SLOTS) {
+      for (const id of BASE_WEAPON_IDS) {
+        if (!this.hasWeapon(id)) {
+          options.push({ type: 'new', id, label: 'НОВОЕ ОРУЖИЕ', sub: '' });
+        }
+      }
+    }
+
+    // 3. Upgrades for owned weapons below max
+    for (const wp of p.weapons) {
+      if (wp.level < MAX_WEAPON_LEVEL) {
+        options.push({ type: 'upgrade', id: wp.id, label: 'УЛУЧШЕНИЕ', sub: 'ур. ' + wp.level + ' → ' + (wp.level + 1) });
+      }
+    }
+
+    // Guarantee: if any evolution is available, it always shows up
+    const evos = options.filter(o => o.type === 'evolve');
+    const rest = options.filter(o => o.type !== 'evolve');
+
+    // Shuffle the rest
+    for (let i = rest.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [rest[i], rest[j]] = [rest[j], rest[i]];
+    }
+
+    // Build 3 picks: 1 evolution (if any) + fill from rest
+    const picked = [];
+    if (evos.length > 0) picked.push(evos[Math.floor(Math.random() * evos.length)]);
+    while (picked.length < 3 && rest.length > 0) {
+      picked.push(rest.shift());
+    }
+    return picked;
   }
 
   // Perk-derived stats
@@ -1732,6 +2218,7 @@ class GameState {
     let m = 1;
     m += this.getRank('speed') * 0.08;
     if (this.player.form === 'phantom') m += 0.3;
+    m += (this.player.passives.boots || 0) * 0.12;
     return m;
   }
 
@@ -1819,8 +2306,9 @@ class GameState {
   }
 
   getScore() {
-    const base = this.kills * 15 + (this.level + 1) * 300 + this.wave * 25;
-    return Math.round(base * ((DIFFICULTIES[Settings.difficulty] || DIFFICULTIES.normal).score || 1));
+    const coin = this.player.passives.coin || 0;
+    const base = this.kills * 15 + (this.level + 1) * 300 + this.wave * 25 + coin * 150;
+    return Math.round(base * ((DIFFICULTIES[Settings.difficulty] || DIFFICULTIES.normal).score || 1) * (1 + 0.15 * coin));
   }
 }
 
@@ -1923,6 +2411,123 @@ function render(ctx, gs) {
     }
   }
 
+  // 1.5 Teleports — ALL look identical (purple portal), good and trap are indistinguishable
+  for (const tp of gs.mapData.teleports || []) {
+    if (tp.used) continue;
+    const t = performance.now() / 1000;
+    const pulse = 0.6 + 0.4 * Math.sin(t * 3 + tp.x * 0.01);
+    const px = tp.x - camX, py = tp.y - camY;
+    // Portal glow
+    const grad = ctx.createRadialGradient(px, py, 2, px, py, 34);
+    grad.addColorStop(0, `rgba(177,140,255,${0.55 * pulse})`);
+    grad.addColorStop(1, 'rgba(177,140,255,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(px, py, 34, 0, Math.PI * 2);
+    ctx.fill();
+    // Ring
+    ctx.strokeStyle = `rgba(177,140,255,${0.85 * pulse})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(px, py, 16 + Math.sin(t * 4 + tp.x) * 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(220,200,255,${0.5 * pulse})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(px, py, 23 + Math.cos(t * 3.4 + tp.x) * 2, 0, Math.PI * 2);
+    ctx.stroke();
+    // Core
+    ctx.fillStyle = `rgba(240,230,255,${0.8 * pulse})`;
+    ctx.beginPath();
+    ctx.arc(px, py, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 1.6 Floor exit — locked by the guard until he's defeated
+  if (gs.mapData.exit) {
+    const t = performance.now() / 1000;
+    const locked = !gs.guardDefeated;
+    const ex = gs.mapData.exit.x - camX, ey = gs.mapData.exit.y - camY;
+    const pulse = 0.6 + 0.4 * Math.sin(t * 2.4);
+    const gR = locked ? 255 : 90, gG = locked ? 70 : 255, gB = locked ? 70 : 160;
+    const grad = ctx.createRadialGradient(ex, ey, 4, ex, ey, 46);
+    grad.addColorStop(0, `rgba(${gR},${gG},${gB},${0.5 * pulse})`);
+    grad.addColorStop(1, `rgba(${gR},${gG},${gB},0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(ex, ey, 46, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${gR},${gG},${gB},${0.9 * pulse})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(ex, ey, 20 + Math.sin(t * 3) * 3, 0, Math.PI * 2);
+    ctx.stroke();
+    if (locked) {
+      // Padlock over the gate: the way down is barred
+      ctx.fillStyle = '#E8B93A';
+      ctx.fillRect(ex - 7, ey - 10, 14, 12);
+      ctx.beginPath();
+      ctx.arc(ex, ey - 11, 7, Math.PI, 0);
+      ctx.fill();
+      ctx.fillStyle = '#3A2E2A';
+      ctx.fillRect(ex - 2, ey - 5, 4, 4);
+      ctx.fillStyle = `rgba(255,70,70,${0.7 + 0.3 * Math.sin(t * 3)})`;
+      ctx.font = "bold 11px 'Courier New', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText('ЗАПЕРТО', ex, ey + 40);
+      ctx.textAlign = 'start';
+    } else {
+      // Downward arrows
+      ctx.fillStyle = `rgba(90,255,160,${0.7 + 0.3 * Math.sin(t * 3)})`;
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(ex + i * 10 - 4, ey - 8);
+        ctx.lineTo(ex + i * 10 + 4, ey - 8);
+        ctx.lineTo(ex + i * 10, ey);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.fillStyle = '#E8FFEA';
+      ctx.font = "bold 11px 'Courier New', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText('ВЫХОД', ex, ey + 40);
+      ctx.textAlign = 'start';
+    }
+  }
+
+  // 1.7 Chests — golden reward boxes scattered in the maze
+  for (const ch of gs.mapData.chests || []) {
+    if (ch.opened) continue;
+    const t = performance.now() / 1000;
+    const pulse = 0.6 + 0.4 * Math.sin(t * 2.6 + ch.x * 0.01);
+    const cx2 = ch.x - camX, cy2 = ch.y - camY;
+    // Golden glow
+    const grad = ctx.createRadialGradient(cx2, cy2, 2, cx2, cy2, 40);
+    grad.addColorStop(0, `rgba(245,197,24,${0.40 * pulse})`);
+    grad.addColorStop(1, 'rgba(245,197,24,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx2, cy2, 40, 0, Math.PI * 2);
+    ctx.fill();
+    // Chest body + lid
+    ctx.fillStyle = '#8A5A1E';
+    ctx.fillRect(cx2 - 12, cy2 - 5, 24, 13);
+    ctx.fillStyle = '#C9901E';
+    ctx.fillRect(cx2 - 12, cy2 - 8, 24, 8);
+    ctx.fillStyle = '#E8B93A';
+    ctx.beginPath();
+    ctx.arc(cx2, cy2 - 8, 12, Math.PI, 0);
+    ctx.fill();
+    // Lock
+    ctx.fillStyle = '#F5C518';
+    ctx.fillRect(cx2 - 3, cy2 - 2, 6, 6);
+    // Sparkle
+    ctx.fillStyle = `rgba(255,255,220,${0.7 + 0.3 * Math.sin(t * 5 + ch.x)})`;
+    ctx.beginPath();
+    ctx.arc(cx2 + 6, cy2 - 12, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   // 2. Particles
   for (const pt of gs.particles) {
     const col = hexToRgb(pt.color);
@@ -2016,7 +2621,8 @@ function render(ctx, gs) {
   for (const e of currentEnemies) {
     if (e.dead) continue;
     let baseColor;
-    if (e.isBoss) baseColor = e.phase === 2 ? '#FF5A1E' : '#FF2D4D';
+    if (e.isGuard) baseColor = '#2E7D32';
+    else if (e.isBoss) baseColor = e.phase === 2 ? '#FF5A1E' : '#FF2D4D';
     else if (e.type === 'shooter') baseColor = '#8A1529';
     else if (e.type === 'tank') baseColor = '#5A3A86';
     else if (e.type === 'charger') baseColor = '#C9901E';
@@ -2051,6 +2657,21 @@ function render(ctx, gs) {
     ctx.beginPath();
     ctx.arc(e.x - camX, e.y - camY, e.r, 0, Math.PI * 2);
     ctx.stroke();
+
+    if (e.isGuard) {
+      // Guardian: armored pulsing ring + label
+      const bt2 = performance.now() / 1000;
+      ctx.strokeStyle = `rgba(76,175,80,${0.7 + 0.3 * Math.sin(bt2 * 3)})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(e.x - camX, e.y - camY, e.r + 9 + Math.sin(bt2 * 3) * 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = "bold 12px 'Courier New', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText('СТРАЖ', e.x - camX, e.y - camY - e.r - 20);
+      ctx.textAlign = 'start';
+    }
 
     // Boss phase 2: pulsing enrage aura + white-hot core
     if (e.isBoss && e.phase === 2) {
@@ -2302,20 +2923,22 @@ function updateHUD(gs) {
         <div style="width:120px;height:6px;background:#0A0A0A;border:1px solid #333;border-radius:4px;overflow:hidden;">
           <div style="height:100%;width:${Math.max(0, Math.round(p.xp / p.xpToNext * 100))}%;background:#5AD1FF;transition:width 0.1s;"></div>
         </div>
-        <span style="font-size:11px;color:#5AD1FF">${p.skillPoints > 0 ? '⚡' + p.skillPoints : ''}</span>
+        <span style="font-size:11px;color:#5AD1FF">${p.skillPoints > 0 ? '<button id="hud-skill-btn" style="background:#5AD1FF;color:#0A0A0A;border:none;border-radius:4px;padding:1px 6px;font-weight:bold;font-size:11px;cursor:pointer;">ДЕРЕВО ⚡' + p.skillPoints + '</button>' : ''}</span>
       </div>`;
 
-    const w = WEAPONS[p.weaponId];
-    const reloading = p.reloading > 0;
-    let ammoText;
-    if (reloading) {
-      ammoText = 'ПЕРЕЗАРЯДКА';
-    } else {
-      const filled = '●'.repeat(Math.min(p.ammo, 20));
-      const empty = '○'.repeat(Math.max(0, Math.min(w.ammoMax, 20) - Math.min(p.ammo, 20)));
-      ammoText = '[' + filled + empty + ']';
-    }
-    document.getElementById('hud-top-right').innerHTML = `${w.icon} ${w.name}  <span style="font-size:14px">${ammoText}</span>`;
+    // All weapons with levels (Vampire Survivors style)
+    const weaponIcons = p.weapons.map(wp => {
+      const w = WEAPONS[wp.id];
+      const dots = '▲'.repeat(Math.max(0, wp.level - 1));
+      return `<span style="font-size:17px" title="${w.name} ур.${wp.level}">${w.icon}${dots}</span>`;
+    }).join(' ');
+    const passivesLine = ['boots', 'heart', 'coin'].filter(id => (p.passives[id] || 0) > 0).map(id => {
+      const it = PASSIVES[id];
+      return `<span style="font-size:15px" title="${it.name} x${p.passives[id]}">${it.icon}${'▲'.repeat(p.passives[id] - 1)}</span>`;
+    }).join(' ');
+    document.getElementById('hud-top-right').innerHTML =
+      `<span style="font-size:12px;color:#A8A196">ОРУЖИЕ:</span> ${weaponIcons}` +
+      (passivesLine ? `<div style="margin-top:3px;font-size:12px;color:#A8A196">ПАССИВКИ: ${passivesLine}</div>` : '');
 
     // Time display
     const timeEl = document.getElementById('hud-time');
@@ -2342,13 +2965,19 @@ function updateHUD(gs) {
       dashEl.style.display = 'none';
     }
 
-    // Boss bar
+    // Boss bar (main boss, or the guard while he guards the exit)
     if (gs.boss) {
       bossBar.style.display = 'block';
       const hpRatio = gs.boss.hp / gs.boss.maxHp;
       document.getElementById('boss-fill').style.width = (hpRatio * 100) + '%';
       document.getElementById('boss-fill').style.background = gs.boss.phase === 2 ? '#FF8800' : '#FF2D4D';
       document.getElementById('boss-label').textContent = gs.boss.phase === 2 ? 'БОСС · ЯРОСТЬ' : 'БОСС';
+    } else if (gs.guard && !gs.guard.dead) {
+      bossBar.style.display = 'block';
+      const hpRatio = gs.guard.hp / gs.guard.maxHp;
+      document.getElementById('boss-fill').style.width = (hpRatio * 100) + '%';
+      document.getElementById('boss-fill').style.background = '#4CAF50';
+      document.getElementById('boss-label').textContent = 'СТРАЖ ВЫХОДА';
     } else {
       bossBar.style.display = 'none';
     }
@@ -2381,17 +3010,38 @@ function renderMinimap(gs) {
   const tileW = mSz / MAP_W;
   const tileH = mSz / MAP_H;
 
-  ctx.clearRect(0, 0, mSz, mSz);
-
-  // Walls
-  for (let ty = 0; ty < MAP_H; ty += 2) {
-    for (let tx = 0; tx < MAP_W; tx += 2) {
-      if (gs.mapData.grid[ty * MAP_W + tx] === 1) {
-        ctx.fillStyle = '#3A2E2A';
-        ctx.fillRect(tx * tileW, ty * tileH, tileW * 2, tileH * 2);
+  // Fog of war: unexplored areas stay dark; explored tiles are revealed
+  // (bright while in view, dimmed once you've moved on). One ImageData pass.
+  const exA = gs.mapData.explored;
+  const ptm = { x: Math.floor(gs.player.x / TILE), y: Math.floor(gs.player.y / TILE) };
+  const visR2 = 6;
+  const inView = (tx, ty) => {
+    const ddx = tx - ptm.x, ddy = ty - ptm.y;
+    return ddx * ddx + ddy * ddy <= visR2 * visR2;
+  };
+  const img = ctx.createImageData(mSz, mSz);
+  const pxBuf = new Uint32Array(img.data.buffer);
+  const col = (r, g, b) => (0xFF << 24) | (b << 16) | (g << 8) | r;
+  const darkBg = col(8, 10, 15);
+  for (let i = 0; i < mSz * mSz; i++) pxBuf[i] = darkBg;
+  const wallVis = col(74, 59, 51), wallSeen = col(40, 31, 27);
+  const floorVis = col(37, 45, 60), floorSeen = col(20, 25, 34);
+  const nW = Math.max(1, Math.round(tileW)), nH = Math.max(1, Math.round(tileH));
+  for (let ty = 0; ty < MAP_H; ty++) {
+    for (let tx = 0; tx < MAP_W; tx++) {
+      const idx = ty * MAP_W + tx;
+      if (!exA[idx]) continue;
+      const vis = inView(tx, ty);
+      const c = gs.mapData.grid[idx] === 1 ? (vis ? wallVis : wallSeen) : (vis ? floorVis : floorSeen);
+      const x0 = Math.round(tx * tileW), y0 = Math.round(ty * tileH);
+      const x1 = Math.min(mSz, x0 + nW), y1 = Math.min(mSz, y0 + nH);
+      for (let yy = y0; yy < y1; yy++) {
+        const row = yy * mSz;
+        for (let xx = x0; xx < x1; xx++) pxBuf[row + xx] = c;
       }
     }
   }
+  ctx.putImageData(img, 0, 0);
 
   // Player
   const px = (gs.player.x / TILE) * tileW;
@@ -2402,10 +3052,38 @@ function renderMinimap(gs) {
   ctx.arc(px, py, 3, 0, Math.PI * 2);
   ctx.fill();
 
-  // Enemies
+  // Floor exit on minimap — revealed once explored (teleports stay hidden — part of the mystery)
+  if (gs.mapData.exit && exA[Math.floor(gs.mapData.exit.y / TILE) * MAP_W + Math.floor(gs.mapData.exit.x / TILE)]) {
+    const exx = (gs.mapData.exit.x / TILE) * tileW;
+    const exy = (gs.mapData.exit.y / TILE) * tileH;
+    ctx.fillStyle = '#5AFFA0';
+    ctx.beginPath();
+    ctx.arc(exx, exy, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(90,255,160,0.8)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(exx, exy, 6 + Math.sin(Date.now() / 300) * 1.5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Chests (gold reward dots) — revealed once explored
+  for (const ch of gs.mapData.chests || []) {
+    if (ch.opened) continue;
+    if (!exA[Math.floor(ch.y / TILE) * MAP_W + Math.floor(ch.x / TILE)]) continue;
+    const chx = (ch.x / TILE) * tileW;
+    const chy = (ch.y / TILE) * tileH;
+    ctx.fillStyle = '#F5C518';
+    ctx.beginPath();
+    ctx.arc(chx, chy, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Enemies — only visible while their tile is in your current view
   const allEnemies = gs.boss ? [...gs.enemies, gs.boss] : gs.enemies;
   for (const e of allEnemies) {
     if (e.dead) continue;
+    if (!inView(Math.floor(e.x / TILE), Math.floor(e.y / TILE))) continue;
     const ex = (e.x / TILE) * tileW;
     const ey = (e.y / TILE) * tileH;
     ctx.fillStyle = '#FF4D6D';
@@ -3042,6 +3720,90 @@ const Music = (() => {
 // ============================================================
 //  SKILL TREE UI
 // ============================================================
+// ============================================================
+//  WEAPON CHOICE (Vampire Survivors style level-up)
+// ============================================================
+const wcOverlay = document.getElementById('weapon-choice-overlay');
+const wcCards = document.getElementById('wc-cards');
+
+function openWeaponChoice(choices) {
+  wcCards.innerHTML = '';
+  choices.forEach(choice => {
+    const w = WEAPONS[choice.id];
+    const card = document.createElement('div');
+    card.className = 'wc-card ' + choice.type;
+
+    const typeEl = document.createElement('div');
+    typeEl.className = 'wc-type';
+    typeEl.textContent = choice.type === 'evolve' ? '✨ ЭВОЛЮЦИЯ' : choice.type === 'new' ? '🆕 НОВОЕ ОРУЖИЕ' : '⬆ УЛУЧШЕНИЕ';
+    card.appendChild(typeEl);
+
+    const iconEl = document.createElement('div');
+    iconEl.className = 'wc-icon';
+    iconEl.textContent = w.icon;
+    card.appendChild(iconEl);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'wc-name';
+    nameEl.textContent = w.name;
+    card.appendChild(nameEl);
+
+    const descEl = document.createElement('div');
+    descEl.className = 'wc-desc';
+    descEl.textContent = w.desc;
+    card.appendChild(descEl);
+
+    if (choice.type === 'evolve') {
+      const comboEl = document.createElement('div');
+      comboEl.className = 'wc-evo-combo';
+      comboEl.textContent = '⚡ ' + choice.sub.toUpperCase();
+      card.appendChild(comboEl);
+      const lvlEl = document.createElement('div');
+      lvlEl.className = 'wc-level';
+      lvlEl.textContent = 'ЗАМЕНЯЕТ ОБА ОРУЖИЯ';
+      card.appendChild(lvlEl);
+    } else if (choice.type === 'upgrade') {
+      const lvlEl = document.createElement('div');
+      lvlEl.className = 'wc-level';
+      lvlEl.textContent = choice.sub + '  ·  +35% УРОНА, БЫСТРЕЕ';
+      card.appendChild(lvlEl);
+    } else {
+      const lvlEl = document.createElement('div');
+      lvlEl.className = 'wc-level';
+      lvlEl.textContent = 'УРОВЕНЬ 1';
+      card.appendChild(lvlEl);
+    }
+
+    card.addEventListener('click', () => {
+      if (!game) return;
+      if (choice.type === 'new') game.addWeapon(choice.id);
+      else if (choice.type === 'upgrade') game.upgradeWeapon(choice.id);
+      else game.evolveWeapon(choice.id);
+      closeWeaponChoice();
+    });
+    wcCards.appendChild(card);
+  });
+  wcOverlay.classList.add('active');
+}
+
+function closeWeaponChoice() {
+  wcOverlay.classList.remove('active');
+  if (game) {
+    game.status = 'play';
+    game.player.invuln = Math.max(game.player.invuln, 0.5);
+  }
+}
+
+// HUD skill tree button (opens perk tree when points available)
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.id === 'hud-skill-btn') {
+    if (game && game.player.skillPoints > 0) {
+      game.status = 'upgrade';
+      openUpgradeTree();
+    }
+  }
+});
+
 const upgradeOverlay = document.getElementById('upgrade-overlay');
 const skillTreeEl = document.getElementById('skill-tree');
 const upgradePointsEl = document.getElementById('upgrade-points');

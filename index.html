@@ -10,6 +10,7 @@
     width: 100%; height: 100%; overflow: hidden; 
     background: #0A0A0A; font-family: 'Courier New', monospace;
     touch-action: none; user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none; overscroll-behavior: none;
   }
   #game-container {
     position: relative; width: 100%; height: 100%;
@@ -18,6 +19,7 @@
   canvas {
     display: block; background: #0A0A0A;
     width: 100%; height: 100%; object-fit: contain;
+    touch-action: none;
   }
   #hud {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -292,6 +294,49 @@
   .mm-diff-btn:hover { transform: scale(1.03); }
   .mm-diff-btn.active { color: #0A0A0A; }
 
+  .settings-select { flex: 1; min-width: 0; padding: 5px 6px; border-radius: 6px; background: #11151F; color: #E8E2D0; border: 1px solid #3A3F4C; font-family: 'Courier New', monospace; font-size: 12px; }
+  .settings-help { color: #777; font-size: 10px; line-height: 1.25; text-align: center; }
+
+  /* ===== Mobile / safe-area layout ===== */
+  @media (max-width: 700px) {
+    #hud-top { padding: calc(8px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) 8px calc(8px + env(safe-area-inset-left)); gap: 6px; align-items: flex-start; }
+    #hud-top-left { max-width: 64vw; font-size: 11px; line-height: 1.25; }
+    #hud-top-right { max-width: 32vw; font-size: 12px; line-height: 1.25; overflow-wrap: anywhere; }
+    #hud-bottom-right { right: env(safe-area-inset-right); bottom: env(safe-area-inset-bottom); padding: 8px; max-width: 46vw; }
+    #hud-bottom-right div { font-size: 12px; }
+    #boss-bar { top: calc(42px + env(safe-area-inset-top)); width: min(250px, 72vw); height: 12px; }
+    #minimap { top: calc(58px + env(safe-area-inset-top)); right: calc(8px + env(safe-area-inset-right)); width: clamp(88px, 25vw, 112px); height: clamp(88px, 25vw, 112px); }
+    #joystick-area { left: calc(14px + env(safe-area-inset-left)); bottom: calc(14px + env(safe-area-inset-bottom)); width: clamp(118px, 34vw, 150px); height: clamp(118px, 34vw, 150px); }
+    #joystick-knob { width: clamp(42px, 12vw, 50px); height: clamp(42px, 12vw, 50px); }
+    #action-buttons { right: calc(14px + env(safe-area-inset-right)); bottom: calc(14px + env(safe-area-inset-bottom)); gap: 10px; }
+    #action-buttons button { width: clamp(56px, 16vw, 68px); height: clamp(56px, 16vw, 68px); font-size: 22px; }
+    #settings-btn { top: calc(8px + env(safe-area-inset-top)); right: calc(8px + env(safe-area-inset-right)); }
+    #settings-panel { top: 50px; right: 0; width: min(240px, calc(100vw - 20px)); }
+    .mm-card { width: min(94vw, 400px); padding: 18px 14px; max-height: calc(100vh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+    .mm-title { font-size: clamp(29px, 10vw, 40px); letter-spacing: 2px; }
+    .mm-sub { font-size: 11px; }
+    .mm-btn { min-height: 46px; padding: 11px 8px; font-size: 16px; }
+    #weapon-choice-overlay { padding: calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom)); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #wc-title { font-size: clamp(21px, 7vw, 30px); }
+    #wc-sub { margin-bottom: 12px; font-size: 12px; }
+    #wc-cards { width: 100%; gap: 10px; }
+    .wc-card { width: min(290px, 88vw); padding: 12px; gap: 5px; }
+    .wc-card .wc-icon { font-size: 38px; }
+    .wc-card .wc-desc { font-size: 11px; }
+    #upgrade-overlay { padding: calc(8px + env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom)); }
+    #upgrade-title { font-size: 21px; }
+    #upgrade-sub { font-size: 11px; }
+    .branch-col { flex-basis: 145px; }
+  }
+  @media (max-width: 420px) and (orientation: portrait) {
+    #hud-top-left { max-width: 70vw; font-size: 10px; }
+    #hud-top-right { max-width: 25vw; font-size: 10px; }
+    #minimap { top: calc(52px + env(safe-area-inset-top)); width: 82px; height: 82px; }
+    #boss-bar { top: calc(37px + env(safe-area-inset-top)); }
+    #action-buttons { gap: 7px; }
+    #action-buttons button { width: 54px; height: 54px; }
+  }
+
   /* ===== Loading splash ===== */
   #splash {
     position: fixed; inset: 0; z-index: 100;
@@ -341,6 +386,76 @@
   }
   #splash.ready .splash-continue { display: block; }
   @keyframes splashBlink { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+  /* ===== Dark luxury system UI ===== */
+  :root {
+    --lux-bg: rgba(12, 14, 20, 0.84);
+    --lux-panel: rgba(19, 21, 29, 0.94);
+    --lux-line: rgba(223, 184, 91, 0.28);
+    --lux-gold: #d9b35a;
+    --lux-cream: #eee8dc;
+    --lux-muted: #8f8b86;
+    --lux-red: #a92f46;
+  }
+  html, body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  button, input, select { font: inherit; }
+  button { -webkit-tap-highlight-color: transparent; }
+  #game-container { background: #08090d; }
+  #hud { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+  #hud-top { padding: 16px 18px; gap: 12px; align-items: flex-start; }
+  #hud-top-left, #hud-top-right {
+    padding: 10px 12px; border: 1px solid rgba(238,232,220,0.12); border-radius: 12px;
+    background: linear-gradient(135deg, rgba(13,15,22,0.88), rgba(24,20,28,0.68));
+    box-shadow: 0 10px 28px rgba(0,0,0,0.22), inset 0 1px rgba(255,255,255,0.035);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    font-weight: 600; letter-spacing: 0.02em;
+  }
+  #hud-top-left { min-width: 220px; max-width: min(52vw, 560px); color: var(--lux-cream); }
+  #hud-top-right { min-width: 130px; max-width: min(30vw, 300px); color: var(--lux-cream); }
+  #hud-bottom-right { right: 18px; bottom: 16px; padding: 9px 12px; border: 1px solid rgba(238,232,220,0.12); border-radius: 10px; background: rgba(10,12,17,0.72); backdrop-filter: blur(10px); }
+  #hud-bottom-right div { font-size: 12px; letter-spacing: 0.08em; }
+  #minimap { border: 1px solid var(--lux-line); border-radius: 12px; padding: 3px; background: rgba(8,9,13,0.78); box-shadow: 0 8px 24px rgba(0,0,0,0.3); overflow: hidden; }
+  #boss-bar { height: 13px; border: 1px solid rgba(238,232,220,0.18); border-radius: 8px; overflow: hidden; box-shadow: 0 0 24px rgba(169,47,70,0.22); }
+  #boss-label { letter-spacing: 0.08em; }
+  #joystick-area { background: radial-gradient(circle, rgba(217,179,90,0.16), rgba(15,17,23,0.22) 62%, rgba(15,17,23,0.05)); border: 1px solid rgba(217,179,90,0.38); box-shadow: inset 0 0 22px rgba(217,179,90,0.06), 0 8px 24px rgba(0,0,0,0.22); }
+  #joystick-knob { background: linear-gradient(145deg, #f0d18b, #a47b36); border: 1px solid rgba(255,247,222,0.72); box-shadow: 0 3px 12px rgba(0,0,0,0.38); }
+  #action-buttons button { box-shadow: 0 7px 18px rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.18); }
+  #btn-dash { background: linear-gradient(145deg, #7edcf4, #347d9a); color: #071016; }
+  #btn-reload { background: linear-gradient(145deg, #f4d27d, #a47b36); color: #171208; }
+  .mm-card, .name-card, #settings-panel {
+    background: linear-gradient(145deg, rgba(24,25,33,0.97), rgba(14,16,23,0.97));
+    border: 1px solid var(--lux-line); border-radius: 16px; box-shadow: 0 24px 70px rgba(0,0,0,0.46), 0 0 38px rgba(169,47,70,0.10);
+  }
+  .mm-card { gap: 8px; padding: 26px 30px; }
+  .mm-title { color: #c04b62; text-shadow: 0 0 22px rgba(169,47,70,0.48); }
+  .mm-sub, .splash-sub { letter-spacing: 0.08em; }
+  .mm-btn { border-color: rgba(217,179,90,0.48); background: rgba(217,179,90,0.07); color: var(--lux-gold); border-radius: 9px; letter-spacing: 0.06em; }
+  .mm-btn:hover, .mm-btn:focus-visible { background: rgba(217,179,90,0.16); border-color: var(--lux-gold); outline: none; }
+  .mm-play { background: linear-gradient(135deg, #e7c675, #aa803d); color: #161208; border-color: #f1d993; }
+  .mm-panel { background: rgba(7,9,14,0.64); border-color: rgba(238,232,220,0.10); }
+  #menu-settings { top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); }
+  #settings-btn, #sound-toggle { background: rgba(17,19,27,0.9); border-color: var(--lux-line); color: var(--lux-gold); box-shadow: 0 8px 20px rgba(0,0,0,0.24); }
+  #settings-btn { position: relative; top: auto; right: auto; }
+  #settings-btn:hover, #settings-btn:focus-visible, #sound-toggle:hover { background: rgba(217,179,90,0.15); outline: none; }
+  #settings-panel { top: 52px; border-color: var(--lux-line); }
+  .settings-row input[type=range] { accent-color: var(--lux-gold); }
+  .settings-select { border-color: rgba(217,179,90,0.28); }
+  #weapon-choice-overlay, #upgrade-overlay { background: radial-gradient(circle at 50% 28%, rgba(28,20,28,0.94), rgba(5,6,10,0.97) 72%); backdrop-filter: blur(5px); }
+  .wc-card, .branch-col { background: linear-gradient(145deg, rgba(23,26,35,0.94), rgba(13,15,22,0.92)); border-color: rgba(238,232,220,0.12); box-shadow: 0 12px 32px rgba(0,0,0,0.20); }
+  .wc-card:hover, .skill-card.available:hover { border-color: var(--lux-gold); box-shadow: 0 0 28px rgba(217,179,90,0.16); }
+  .wc-card .wc-name, .skill-name { letter-spacing: 0.03em; }
+  .name-card button, #upgrade-close { background: linear-gradient(135deg, #e7c675, #aa803d); color: #161208; border-radius: 8px; }
+  :focus-visible { outline: 2px solid var(--lux-gold); outline-offset: 2px; }
+  @media (max-height: 560px) and (orientation: landscape) {
+    #hud-top { padding-top: 8px; }
+    #hud-top-left, #hud-top-right { padding: 7px 9px; font-size: 11px; }
+    #minimap { top: 48px; width: 92px; height: 92px; }
+    #joystick-area { bottom: 8px; left: 12px; width: 112px; height: 112px; }
+    #action-buttons { right: 16px; bottom: 10px; gap: 7px; }
+    #action-buttons button { width: 52px; height: 52px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
 </style>
 </head>
 <body>
@@ -407,6 +522,20 @@
         <input type="range" id="volume-slider" min="0" max="100" value="70">
         <span id="volume-value">70%</span>
       </div>
+      <div class="settings-row">
+        <span>🔎</span>
+        <input type="range" id="scale-slider" min="85" max="115" value="100">
+        <span id="scale-value">100%</span>
+      </div>
+      <div class="settings-row">
+        <span>🎨</span>
+        <select id="render-quality" class="settings-select">
+          <option value="auto">Качество: авто</option>
+          <option value="performance">Качество: эконом</option>
+          <option value="quality">Качество: высокое</option>
+        </select>
+      </div>
+      <div class="settings-help">Масштаб меняет размер игрового мира на экране. Эконом подходит для слабых телефонов.</div>
       <button id="settings-mute">🔊 Звук: вкл</button>
     </div>
   </div>
@@ -514,7 +643,12 @@ const ENEMY_BASE = {
   shooter: { hp:2, speed:50,  r:16, fireCd:1.6, bulletSpeed:500 },
   tank:    { hp:6, speed:95,  r:22, fireCd:1.6, bulletSpeed:500 },
   charger: { hp:1, speed:250, r:13, fireCd:0,   bulletSpeed:0 },
-  brute:   { hp:9, speed:45,  r:26, fireCd:0,   bulletSpeed:0 }
+  brute:   { hp:9, speed:45,  r:26, fireCd:0,   bulletSpeed:0 },
+  summoner:{ hp:4, speed:42,  r:20, fireCd:3.8, bulletSpeed:0 },
+  hunter:  { hp:3, speed:135, r:15, fireCd:2.2, bulletSpeed:620 },
+  splitter:{ hp:5, speed:75,  r:20, fireCd:0,   bulletSpeed:0 },
+  mine:    { hp:2, speed:95,  r:14, fireCd:0,   bulletSpeed:0 },
+  shieldbearer:{ hp:8, speed:58, r:24, fireCd:0, bulletSpeed:0 }
 };
 // Elite modifiers — on АДСКАЯ difficulty enemies can spawn enhanced with a bonus
 const ELITE_MODS = {
@@ -583,8 +717,38 @@ const SKILL_TREE = {
 const DIFFICULTIES = {
   easy:   { name: 'ЛЁГКАЯ', hp: 0.6,  speed: 0.85, spawn: 1.5, cap: 0.8,  score: 0.7,  color: '#4CAF50' },
   normal: { name: 'СРЕДНЯЯ', hp: 1,    speed: 1,    spawn: 1,   cap: 1,    score: 1,    color: '#F5C518' },
-  hard:   { name: 'АДСКАЯ', hp: 1.6,  speed: 1.2,  spawn: 0.6, cap: 1.4,  score: 1.5,  color: '#FF2D4D' }
+  hard:   { name: 'АДСКАЯ', hp: 1.6,  speed: 1.2, spawn: 0.6, cap: 1.4, score: 1.5, color: '#FF2D4D' }
 };
+
+// Floor variety: each run combines a biome, an objective and director events.
+const FLOOR_BIOMES = [
+  { id:'ash', name:'ПЕПЕЛЬНЫЙ КОТЁЛ', icon:'🔥', color:'#FF7A3D', hazard:'burn', desc:'огненные зоны наносят урон' },
+  { id:'frost', name:'ЛЕДЯНОЙ РАЗЛОМ', icon:'❄', color:'#7FE3FF', hazard:'slow', desc:'ледяные поля замедляют движение' },
+  { id:'toxic', name:'ТОКСИЧНЫЕ КАТАКОМБЫ', icon:'☣', color:'#7DFF72', hazard:'poison', desc:'ядовитые облака постепенно истощают HP' },
+  { id:'time', name:'РАЗЛОМ ВРЕМЕНИ', icon:'◉', color:'#B18CFF', hazard:'time', desc:'аномалии меняют скорость течения времени' }
+];
+const FLOOR_OBJECTIVES = [
+  { id:'kills', name:'ЗАЧИСТКА', desc:'уничтожь врагов', target:14 },
+  { id:'survive', name:'ВЫЖИВАНИЕ', desc:'продержись под натиском', target:28 },
+  { id:'beacons', name:'РИТУАЛ', desc:'активируй маяки', target:3 },
+  { id:'elite', name:'ОХОТА', desc:'найди и уничтожь отмеченную элиту', target:1 },
+  { id:'rush', name:'ГОНКА', desc:'доберись до маяка до истечения времени', target:1 }
+];
+function pickFloorProfile(level, previousId, previousObjectiveId) {
+  const biomePool = FLOOR_BIOMES.filter(b => b.id !== previousId);
+  const objectivePool = FLOOR_OBJECTIVES.filter(o => o.id !== previousObjectiveId);
+  const biome = biomePool[Math.floor(Math.random() * biomePool.length)] || FLOOR_BIOMES[0];
+  const objective = (objectivePool.length ? objectivePool : FLOOR_OBJECTIVES)[Math.floor(Math.random() * (objectivePool.length ? objectivePool.length : FLOOR_OBJECTIVES.length))];
+  const target = objective.id === 'kills' ? 14 + Math.min(level, 8) * 2
+    : objective.id === 'survive' ? 24 + Math.min(level, 8) * 2
+    : objective.id === 'beacons' ? 3 : 1;
+  return {
+    biome,
+    objective: { ...objective, target, progress: 0, complete: false, failed: false,
+      timer: objective.id === 'survive' ? target : objective.id === 'rush' ? Math.max(34, 48 - level * 1.5) : 0 },
+    seed: Math.floor(Math.random() * 0x7FFFFFFF)
+  };
+}
 
 function getLevelConfig(levelIndex) {
   const shift = levelIndex % WEAPON_POOL.length;
@@ -596,9 +760,9 @@ function getLevelConfig(levelIndex) {
     weaponOrder: rotated.slice(0, Math.min(5, rotated.length)),
     weaponWaves: [1,3,5,7,9],
     bossWave: 10,
-    enemyTypes: levelIndex >= 3 ? ['melee','shooter','tank','charger','brute'] :
-                 levelIndex >= 2 ? ['melee','shooter','tank','charger'] :
-                 levelIndex >= 1 ? ['melee','shooter','tank'] : ['melee','shooter'],
+    enemyTypes: levelIndex >= 3 ? ['melee','shooter','tank','charger','brute','summoner','hunter','splitter','mine','shieldbearer'] :
+                 levelIndex >= 2 ? ['melee','shooter','tank','charger','summoner','hunter','splitter','mine'] :
+                 levelIndex >= 1 ? ['melee','shooter','tank','charger','hunter','splitter'] : ['melee','shooter','charger'],
     hpMul: (1 + levelIndex * 0.8) * d.hp,
     speedMul: (1 + levelIndex * 0.15) * d.speed,
     dmgMul: (1 + levelIndex * 0.3) * d.speed,
@@ -612,7 +776,7 @@ function getLevelConfig(levelIndex) {
 // ============================================================
 //  MAP GENERATION
 // ============================================================
-function generateMap() {
+function generateMap(profile) {
   const grid = new Int32Array(MAP_W * MAP_H);
   const idx = (x,y) => y * MAP_W + x;
 
@@ -689,10 +853,49 @@ function generateMap() {
   const spawnX = (cx + 0.5) * TILE;
   const spawnY = (cy + 0.5) * TILE;
 
-  // Exit: far corner from spawn — the goal of the floor
-  const exitSpot = { x: MAP_W - 3, y: MAP_H - 3 };
-  grid[idx(exitSpot.x, exitSpot.y)] = 0;
-  grid[idx(exitSpot.x - 1, exitSpot.y)] = 0;
+  // Exit: choose a new reachable destination on every floor instead of a fixed corner.
+  // Prefer remote tiles so the maze still has a meaningful journey, while allowing
+  // the actual destination to appear anywhere in the labyrinth.
+  const reachable = new Int32Array(MAP_W * MAP_H);
+  reachable.fill(-1);
+  const queue = [[cx, cy]];
+  reachable[idx(cx, cy)] = 0;
+  for (let qi = 0; qi < queue.length; qi++) {
+    const [qx, qy] = queue[qi];
+    const nextDist = reachable[idx(qx, qy)] + 1;
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = qx + dx, ny = qy + dy;
+      if (nx <= 1 || ny <= 1 || nx >= MAP_W - 2 || ny >= MAP_H - 2) continue;
+      const ni = idx(nx, ny);
+      if (reachable[ni] >= 0 || grid[ni] === 1) continue;
+      reachable[ni] = nextDist;
+      queue.push([nx, ny]);
+    }
+  }
+  const exitCandidates = [];
+  for (let ty = 2; ty < MAP_H - 2; ty++) {
+    for (let tx = 2; tx < MAP_W - 2; tx++) {
+      const pathDistance = reachable[idx(tx, ty)];
+      if (pathDistance >= 12) exitCandidates.push({ x: tx, y: ty, pathDistance });
+    }
+  }
+  // Extremely dense mazes can have fewer remote cells; fall back to every reachable
+  // floor tile outside the starting area rather than ever returning a fixed location.
+  const fallbackCandidates = exitCandidates.length > 0 ? exitCandidates : (() => {
+    const all = [];
+    for (let ty = 2; ty < MAP_H - 2; ty++) {
+      for (let tx = 2; tx < MAP_W - 2; tx++) {
+        if (reachable[idx(tx, ty)] >= 4) all.push({ x: tx, y: ty, pathDistance: reachable[idx(tx, ty)] });
+      }
+    }
+    return all;
+  })();
+  const exitSpot = fallbackCandidates[Math.floor(Math.random() * fallbackCandidates.length)] || { x: MAP_W - 3, y: MAP_H - 3 };
+  // Open a small gate pocket so the exit and its guardian always have room to fight.
+  for (const [dx, dy] of [[0,0],[-1,0],[1,0],[0,-1],[0,1]]) {
+    const gx = exitSpot.x + dx, gy = exitSpot.y + dy;
+    if (gx > 0 && gy > 0 && gx < MAP_W - 1 && gy < MAP_H - 1) grid[idx(gx, gy)] = 0;
+  }
   const exit = { x: (exitSpot.x + 0.5) * TILE, y: (exitSpot.y + 0.5) * TILE };
 
   // Teleports: 8-12 scattered — visually identical, some help, some betray
@@ -734,6 +937,49 @@ function generateMap() {
   }
   if (!guardSpot) guardSpot = { x: exit.x - TILE * 2, y: exit.y };
 
+  // Points of interest: optional objectives use beacons; hazards make routes differ.
+  const beacons = [];
+  const hazards = [];
+  const cursedChests = [];
+  const altars = [];
+  const usedPoi = (wx, wy, minDist) => Math.hypot(wx - spawnX, wy - spawnY) < minDist ||
+    Math.hypot(wx - exit.x, wy - exit.y) < 220 ||
+    teleports.some(tp => Math.hypot(wx - tp.x, wy - tp.y) < 180) ||
+    chests.some(ch => Math.hypot(wx - ch.x, wy - ch.y) < 150) ||
+    beacons.some(b => Math.hypot(wx - b.x, wy - b.y) < 260) ||
+    hazards.some(h => Math.hypot(wx - h.x, wy - h.y) < 260) ||
+    cursedChests.some(ch => Math.hypot(wx - ch.x, wy - ch.y) < 220) ||
+    altars.some(a => Math.hypot(wx - a.x, wy - a.y) < 220);
+  const randomPoi = (minFromSpawn, minFromExit) => {
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const tx = 2 + Math.floor(Math.random() * (MAP_W - 4));
+      const ty = 2 + Math.floor(Math.random() * (MAP_H - 4));
+      if (grid[idx(tx, ty)] === 1) continue;
+      const wx = (tx + 0.5) * TILE, wy = (ty + 0.5) * TILE;
+      if (Math.hypot(wx - spawnX, wy - spawnY) < minFromSpawn) continue;
+      if (Math.hypot(wx - exit.x, wy - exit.y) < minFromExit) continue;
+      if (usedPoi(wx, wy, minFromSpawn)) continue;
+      return { x: wx, y: wy };
+    }
+    return null;
+  };
+  for (let i = 0; i < 3; i++) {
+    const point = randomPoi(650, 280);
+    if (point) beacons.push({ ...point, active: false });
+  }
+  for (let i = 0; i < 5; i++) {
+    const point = randomPoi(520, 320);
+    if (point) hazards.push({ ...point, radius: 105, phase: Math.random() * Math.PI * 2 });
+  }
+  for (let i = 0; i < 2; i++) {
+    const point = randomPoi(700, 320);
+    if (point) cursedChests.push({ ...point, used: false });
+  }
+  for (let i = 0; i < 2; i++) {
+    const point = randomPoi(620, 320);
+    if (point) altars.push({ ...point, used: false });
+  }
+
   // Fog of war: explored tiles revealed as the player explores
   const explored = new Uint8Array(MAP_W * MAP_H);
   // Reveal the spawn area immediately
@@ -746,7 +992,7 @@ function generateMap() {
     }
   }
 
-  return { grid, spawnX, spawnY, exit, teleports, chests, explored, guardSpot };
+  return { grid, spawnX, spawnY, exit, teleports, chests, beacons, hazards, cursedChests, altars, explored, guardSpot };
 }
 
 class GameMap {
@@ -933,6 +1179,10 @@ class GameState {
     this.flowTy = -1;
     this.guard = null;
     this.guardDefeated = false;
+    this.floorProfile = null;
+    this.director = { pressure: 0.2, killWindow: 0, damageWindow: 0, eventCooldown: 8, activeEvent: '', eventT: 0, restT: 0, lastKillCount: 0 };
+    this.hazardTickT = 0;
+    this.guardWarnT = 0;
 
     // Input
     this.joystickDX = 0;
@@ -946,6 +1196,10 @@ class GameState {
     this.xpOrbs = [];
     this.regenTimer = 0;
     this.bossRewardGiven = false;
+    this.objectiveKills = 0;
+    this.objectiveTargetKilled = false;
+    this.previousBiomeId = null;
+    this.previousObjectiveId = null;
 
     this.reset();
   }
@@ -960,7 +1214,11 @@ class GameState {
     this.particles = [];
     this.banners = [];
     this.xpOrbs = [];
-    this.mapData = generateMap();
+    this.floorProfile = pickFloorProfile(0, null, null);
+    this.previousBiomeId = this.floorProfile.biome.id;
+    this.previousObjectiveId = this.floorProfile.objective.id;
+    this.objectiveKills = 0;
+    this.mapData = generateMap(this.floorProfile);
     this.player = { x: this.mapData.spawnX, y: this.mapData.spawnY, r: 14, speed: 280,
       weapons: [{ id: 'pistol', level: 1 }],
       dashCd: 0, dashT: 0, dashDX: 0, dashDY: 0, dashUnlocked: false, invuln: 0,
@@ -980,6 +1238,11 @@ class GameState {
     this.flowTy = -1;
     this.guard = null;
     this.guardDefeated = false;
+    this.director = { pressure: 0.2, killWindow: 0, damageWindow: 0, eventCooldown: 8, activeEvent: '', eventT: 0, restT: 0, lastKillCount: 0 };
+    this.hazardTickT = 0;
+    this.guardWarnT = 0;
+    this.objectiveKills = 0;
+    this.objectiveTargetKilled = false;
     this.nameEntered = false;
   }
 
@@ -1014,6 +1277,144 @@ class GameState {
     this.globalPower = 1;
     this.scaleT = 5;
     this.boss = null;
+    const objective = this.floorProfile?.objective;
+    if (objective) {
+      objective.progress = 0;
+      objective.complete = false;
+      objective.failed = false;
+      if (objective.id === 'survive') objective.timer = objective.target;
+      if (objective.id === 'rush') objective.timer = Math.max(34, 48 - this.level * 1.5);
+    }
+  }
+
+  completeFloorObjective() {
+    const objective = this.floorProfile?.objective;
+    if (!objective || objective.complete) return;
+    objective.complete = true;
+    objective.progress = objective.target;
+    this.banners.push({ title: 'ЦЕЛЬ ВЫПОЛНЕНА', subtitle: objective.name + ' · ВЫХОД МОЖНО ОТКРЫТЬ', color: 0xFFFFD700, t: 0, duration: 2.1 });
+    this.burst(this.player.x, this.player.y, 28, 0xFFFFD700, 300);
+    this.ring(this.player.x, this.player.y, 0xFFFFD700, 130, 0.7, 4);
+    this.dropXp(this.player.x, this.player.y, 8);
+    Sfx.levelUp();
+  }
+
+  updateFloorObjective(dt) {
+    const objective = this.floorProfile?.objective;
+    if (!objective || objective.complete) return;
+    const p = this.player;
+    if (objective.id === 'kills') {
+      objective.progress = Math.min(objective.target, this.objectiveKills);
+    } else if (objective.id === 'survive') {
+      objective.timer = Math.max(0, objective.timer - dt);
+      objective.progress = Math.min(objective.target, objective.target - objective.timer);
+    } else if (objective.id === 'beacons' || objective.id === 'rush') {
+      const beacons = this.mapData.beacons || [];
+      if (objective.id === 'beacons') {
+        for (const beacon of beacons) {
+          if (!beacon.active && Math.hypot(p.x - beacon.x, p.y - beacon.y) < 48) {
+            beacon.active = true;
+            objective.progress++;
+            this.burst(beacon.x, beacon.y, 18, 0xFF5AD1FF, 240);
+            this.ring(beacon.x, beacon.y, 0xFF5AD1FF, 90, 0.6, 3);
+            this.floatText(beacon.x, beacon.y - 24, 'МАЯК АКТИВИРОВАН', 0xFF5AD1FF, 13);
+            Sfx.buy();
+          }
+        }
+      } else {
+        const beacon = beacons[0];
+        if (beacon) {
+          objective.timer = Math.max(0, objective.timer - dt);
+          objective.progress = Math.min(1, beacon.active ? 1 : 0);
+          if (!beacon.active && Math.hypot(p.x - beacon.x, p.y - beacon.y) < 52) {
+            beacon.active = true;
+            objective.progress = 1;
+            this.burst(beacon.x, beacon.y, 22, 0xFFFFD700, 260);
+            this.ring(beacon.x, beacon.y, 0xFFFFD700, 110, 0.7, 4);
+            this.floatText(beacon.x, beacon.y - 24, 'ФИНИШ!', 0xFFFFD700, 15);
+            Sfx.buy();
+          }
+          if (objective.timer <= 0 && !beacon.active) objective.failed = true;
+        }
+      }
+    } else if (objective.id === 'elite') {
+      if (this.objectiveTargetKilled) objective.progress = 1;
+    }
+    if (objective.id === 'survive' && objective.timer <= 0) objective.progress = objective.target;
+    if (objective.progress >= objective.target && !objective.failed) this.completeFloorObjective();
+  }
+
+  updateHazards(dt) {
+    const p = this.player;
+    p.hazardSpeedMul = 1;
+    p.hazardTimeScale = 1;
+    p.hazardType = '';
+    const biome = this.floorProfile?.biome;
+    if (!biome) return;
+    for (const h of this.mapData.hazards || []) {
+      if (Math.hypot(p.x - h.x, p.y - h.y) >= h.radius) continue;
+      p.hazardType = biome.hazard;
+      if (biome.hazard === 'slow') p.hazardSpeedMul = 0.52;
+      if (biome.hazard === 'time') p.hazardTimeScale = 0.48;
+    }
+    if (p.hazardType === 'burn' || p.hazardType === 'poison') {
+      this.hazardTickT -= dt;
+      if (this.hazardTickT <= 0) {
+        this.hazardTickT = 0.85;
+        this.damagePlayer(p.hazardType === 'burn' ? 1 : 1);
+        this.burst(p.x, p.y, 5, p.hazardType === 'burn' ? 0xFFFF6600 : 0xFF7DFF72, 90);
+      }
+    } else {
+      this.hazardTickT = Math.min(this.hazardTickT, 0.25);
+    }
+  }
+
+  updateDirector(dt, moving) {
+    const d = this.director;
+    if (!d) return;
+    d.killWindow += Math.max(0, this.kills - d.lastKillCount);
+    d.lastKillCount = this.kills;
+    d.sampleT = (d.sampleT || 0) + dt;
+    d.damageWindow = Math.max(0, d.damageWindow - dt * 0.12);
+    d.eventCooldown -= dt;
+    if (!moving) d.idleT = (d.idleT || 0) + dt; else d.idleT = 0;
+    if (d.sampleT >= 5) {
+      const killRate = d.killWindow / d.sampleT;
+      const crowd = Math.min(1, this.enemies.length / 55);
+      const target = Math.max(0.12, Math.min(0.92, 0.22 + killRate * 0.055 + crowd * 0.35 - d.damageWindow * 0.2));
+      d.pressure += (target - d.pressure) * 0.35;
+      d.killWindow = 0;
+      d.sampleT = 0;
+    }
+    if (d.eventT > 0) {
+      d.eventT -= dt;
+      if (d.eventT <= 0) d.activeEvent = '';
+    }
+    if (d.restT > 0) d.restT -= dt;
+    if (d.idleT > 8 && d.eventCooldown <= 0 && d.eventT <= 0 && this.wave < this.levelCfg.bossWave) {
+      d.pressure = Math.min(1, d.pressure + 0.14);
+      d.activeEvent = 'ПРОВЕРКА';
+      d.eventT = 5;
+      d.eventCooldown = 14;
+      this.spawnSquad('ambush');
+      this.banners.push({ title: 'ТЫ СЛИШКОМ ДОЛГО СТОИШЬ', subtitle: 'ДВИЖЕНИЕ — ТВОЁ ПРЕИМУЩЕСТВО', color: 0xFFFF8800, t: 0, duration: 1.7 });
+    } else if (d.eventCooldown <= 0 && d.eventT <= 0 && this.wave < this.levelCfg.bossWave) {
+      if (d.damageWindow > 0.65 || this.player.hp < this.player.maxHp * 0.3) {
+        d.activeEvent = 'ПЕРЕДЫШКА';
+        d.restT = 4;
+        d.eventT = 4;
+        d.eventCooldown = 18;
+        d.pressure = Math.max(0.12, d.pressure - 0.2);
+        this.banners.push({ title: 'ПЕРЕДЫШКА', subtitle: 'РЕЖИССЁР СНИЖАЕТ НАТИСК', color: 0xFF5AD1FF, t: 0, duration: 1.5 });
+      } else {
+        const hunt = d.pressure > 0.62 && Math.random() < 0.55;
+        d.activeEvent = hunt ? 'ОХОТА' : 'ЗАСАДА';
+        d.eventT = hunt ? 7 : 4;
+        d.eventCooldown = hunt ? 20 : 15;
+        this.spawnSquad(hunt ? 'hunt' : 'ambush');
+        this.banners.push({ title: hunt ? 'ОХОТА НАЧАЛАСЬ' : 'ЗАСАДА', subtitle: hunt ? 'ОНИ ИДУТ ПО ТВОЕМУ СЛЕДУ' : 'ОТРЯД ВРАГОВ ВЫШЕЛ ИЗ ТЬМЫ', color: 0xFFFF4D6D, t: 0, duration: 1.7 });
+      }
+    }
   }
 
   // Find a safe floor tile near the target point for teleport landing
@@ -1037,7 +1438,14 @@ class GameState {
     this.level++;
     this.burst(this.player.x, this.player.y, 40, 0xFF9BE7FF, 400);
     this.ring(this.player.x, this.player.y, 0xFF9BE7FF, 140, 0.7, 4);
-    this.mapData = generateMap();
+    const previousBiome = this.floorProfile?.biome?.id;
+    const previousObjective = this.floorProfile?.objective?.id;
+    this.floorProfile = pickFloorProfile(this.level, previousBiome, previousObjective);
+    this.previousBiomeId = this.floorProfile.biome.id;
+    this.previousObjectiveId = this.floorProfile.objective.id;
+    this.objectiveKills = 0;
+    this.objectiveTargetKilled = false;
+    this.mapData = generateMap(this.floorProfile);
     this.player.x = this.mapData.spawnX;
     this.player.y = this.mapData.spawnY;
     this.enemies = [];
@@ -1049,7 +1457,10 @@ class GameState {
     this.boss = null;
     this.guard = null;
     this.guardDefeated = false;
-    this.banners.push({ title: 'ЭТАЖ ' + (this.level + 1), subtitle: 'НАЙДИ ВЫХОД В ЛАБИРИНТЕ', color: 0xFF9BE7FF, t: 0, duration: 2.0 });
+    this.director = { pressure: 0.2, killWindow: 0, damageWindow: 0, eventCooldown: 8, activeEvent: '', eventT: 0, restT: 0, lastKillCount: this.kills };
+    this.hazardTickT = 0;
+    this.guardWarnT = 0;
+    this.banners.push({ title: this.floorProfile.biome.icon + ' ' + this.floorProfile.biome.name, subtitle: this.floorProfile.objective.name + ' · ' + this.floorProfile.objective.desc, color: parseInt(this.floorProfile.biome.color.replace('#', 'FF'), 16), t: 0, duration: 2.4 });
     this.flash = Math.max(this.flash, 0.4);
     Sfx.form();
   }
@@ -1123,6 +1534,33 @@ class GameState {
     return evo.combo.every(id => this.weaponLevel(id) >= MAX_WEAPON_LEVEL);
   }
 
+  openCursedChest(ch) {
+    if (ch.used) return;
+    ch.used = true;
+    const p = this.player;
+    p.hp = Math.max(1, p.hp - 1);
+    this.director.pressure = Math.min(1, (this.director.pressure || 0.2) + 0.18);
+    this.burst(ch.x, ch.y, 34, 0xFFFF3D00, 360);
+    this.ring(ch.x, ch.y, 0xFFFF3D00, 120, 0.7, 4);
+    this.floatText(ch.x, ch.y - 28, 'ПРОКЛЯТЫЙ СУНДУК!', 0xFFFF3D00, 15);
+    this.banners.push({ title: 'ПРОКЛЯТИЕ', subtitle: 'ЗАСАДА В ОБМЕН НА БОГАТУЮ НАГРАДУ', color: 0xFFFF3D00, t: 0, duration: 2.0 });
+    this.spawnSquad('ambush');
+    this.dropXp(ch.x, ch.y, 12);
+    Sfx.explosion(120);
+  }
+
+  activateAltar(altar) {
+    if (altar.used) return;
+    altar.used = true;
+    this.player.altarT = 18;
+    this.director.pressure = Math.min(1, (this.director.pressure || 0.2) + 0.12);
+    this.burst(altar.x, altar.y, 26, 0xFFFFD700, 280);
+    this.ring(altar.x, altar.y, 0xFFFFD700, 105, 0.7, 4);
+    this.floatText(altar.x, altar.y - 24, 'СИЛА АЛТАРЯ · 18 СЕК', 0xFFFFD700, 14);
+    this.banners.push({ title: 'АЛТАРЬ СИЛЫ', subtitle: '+35% УРОН · НАТИСК ВЫШЕ', color: 0xFFFFD700, t: 0, duration: 1.8 });
+    Sfx.form();
+  }
+
   openChest(ch) {
     if (ch.opened) return;
     ch.opened = true;
@@ -1173,7 +1611,7 @@ class GameState {
       if (!w) continue;
       wp.cd = w.cd * (1 - 0.04 * (wp.level - 1));  // faster at higher levels
       const levelMul = 1 + 0.35 * (wp.level - 1);  // +35% dmg per level
-      const dmgMul = this.getDmgMul();
+      const dmgMul = this.getDmgMul() * (p.altarT > 0 ? 1.35 : 1);
       const crit = Math.random() < this.getCritChance() ? 3 : 1;
       const extraPellets = this.getMultishot();
       const splashBonus = this.getRank('splash') * 0.20 + 1;
@@ -1385,8 +1823,10 @@ class GameState {
     const p = this.player;
     p.dashCd = Math.max(0, p.dashCd - dt);
     p.invuln = Math.max(0, p.invuln - dt);
+    p.altarT = Math.max(0, (p.altarT || 0) - dt);
 
     const map = new GameMap(this.mapData.grid);
+    this.updateHazards(dt);
     let moving = false;
 
     if (p.dashT > 0) {
@@ -1395,12 +1835,13 @@ class GameState {
       moving = true;
     } else if (this.joystickActive && (this.joystickDX !== 0 || this.joystickDY !== 0)) {
       const mag = Math.hypot(this.joystickDX, this.joystickDY);
-      const spdMul = this.getSpeedMul();
+      const spdMul = this.getSpeedMul() * (p.hazardSpeedMul || 1);
       map.moveWithCollision(p, (this.joystickDX / mag) * p.speed * spdMul * dt, (this.joystickDY / mag) * p.speed * spdMul * dt);
       moving = true;
     }
 
     this.timeScale = moving ? 1.0 : (this.shotSlowmo > 0 ? 0.3 : 0.03);
+    this.timeScale *= (p.hazardTimeScale || 1);
     // Chronomancy: move in slow-mo
     const chronoRank = this.getRank('chronomancy');
     if (!moving && this.timeScale < 0.5 && chronoRank > 0) {
@@ -1408,6 +1849,8 @@ class GameState {
     }
     this.shotSlowmo = Math.max(0, this.shotSlowmo - dt);
     const sdt = dt * this.timeScale;
+    this.updateFloorObjective(dt);
+    this.updateDirector(dt, moving);
 
     // Fog of war: reveal explored tiles around the player each frame
     const ptFog = { x: Math.floor(p.x / TILE), y: Math.floor(p.y / TILE) };
@@ -1448,10 +1891,18 @@ class GameState {
       this.spawnBoss();
     } else if (this.boss === null) {
       this.spawnT -= sdt;
-      const cap = Math.min(90, Math.round((15 + Math.min(this.wave, 20) * 3) * this.levelCfg.capMul));
+      // Aggressive pressure: the horde grows with wave and floor, with a hard
+      // ceiling to keep the canvas game responsive on weaker devices.
+      const baseCap = 24 + Math.min(this.wave, 20) * 4 + Math.min(this.level, 10) * 2;
+      const pressureBoost = 1 + (this.director?.pressure || 0) * 0.35;
+      const cap = Math.min(110, Math.round(baseCap * this.levelCfg.capMul * pressureBoost));
       if (this.spawnT <= 0 && this.enemies.length < cap) {
-        this.spawnT = (1.2 - Math.min(0.9, Math.min(this.wave, 20) * 0.05)) * this.levelCfg.spawnMul;
-        this.spawnEnemy();
+        const waveInterval = 0.9 - Math.min(0.55, Math.min(this.wave, 20) * 0.045);
+        const floorInterval = Math.max(0.65, 1 - this.level * 0.025);
+        this.spawnT = waveInterval * floorInterval * this.levelCfg.spawnMul / (1 + (this.director?.pressure || 0) * 0.45);
+        if (this.director?.activeEvent === 'ПЕРЕДЫШКА') this.spawnT *= 1.8;
+        if (Math.random() < 0.28 + (this.director?.pressure || 0) * 0.25) this.spawnSquad('pressure');
+        else this.spawnEnemy();
       }
     }
 
@@ -1483,6 +1934,14 @@ class GameState {
       if (Math.hypot(p.x - ch.x, p.y - ch.y) < 32) {
         this.openChest(ch);
       }
+    }
+
+    // Risk/reward points: cursed chests trigger an ambush, altars empower the build.
+    for (const chest of this.mapData.cursedChests || []) {
+      if (!chest.used && Math.hypot(p.x - chest.x, p.y - chest.y) < 34) this.openCursedChest(chest);
+    }
+    for (const altar of this.mapData.altars || []) {
+      if (!altar.used && Math.hypot(p.x - altar.x, p.y - altar.y) < 42) this.activateAltar(altar);
     }
 
     // Teleports: reach one and get flung somewhere — but where?
@@ -1529,6 +1988,7 @@ class GameState {
     }
 
     // Guard: the exit is protected — a mini-boss spawns when you approach
+    const objective = this.floorProfile?.objective;
     const ex = this.mapData.exit;
     if (ex && !this.guard && !this.guardDefeated && Math.hypot(p.x - ex.x, p.y - ex.y) < 520) {
       this.spawnGuard();
@@ -1538,11 +1998,13 @@ class GameState {
       this.guardWarnT = (this.guardWarnT || 0) - dt;
       if (this.guardWarnT <= 0) {
         this.guardWarnT = 1.4;
-        this.floatText(ex.x, ex.y - 46, 'УБЕЙ СТРАЖА, ЧТОБЫ СПУСТИТЬСЯ!', 0xFFFF3B30, 13);
+        const objectiveHint = objective && !objective.complete && !objective.failed ? ' · СНАЧАЛА ВЫПОЛНИ ЦЕЛЬ' : '';
+        this.floatText(ex.x, ex.y - 46, 'УБЕЙ СТРАЖА, ЧТОБЫ СПУСТИТЬСЯ!' + objectiveHint, 0xFFFF3B30, 13);
       }
     }
     // Exit: reach it to descend to the next floor (only once the guard is dead)
-    if (ex && this.guardDefeated && Math.hypot(p.x - ex.x, p.y - ex.y) < 30) {
+    const objectiveAllowsExit = !objective || objective.complete || objective.failed;
+    if (ex && this.guardDefeated && objectiveAllowsExit && Math.hypot(p.x - ex.x, p.y - ex.y) < 30) {
       this.nextFloor();
     }
 
@@ -1751,6 +2213,39 @@ class GameState {
           this.burst(e.x, e.y, 14, 0xFFC41E3A, 280);
           this.floatText(e.x, e.y - e.r - 10, 'МИНЬОНЫ!', 0xFFFF4D6D, 14);
         }
+      } else if (e.type === 'summoner') {
+        // Summoner keeps distance and periodically calls a small melee escort.
+        if (emul > 0) map.moveWithCollision(e, -dirToP.x * e.speed * sdt * emul, -dirToP.y * e.speed * sdt * emul);
+        e.summonT -= sdt;
+        if (e.summonT <= 0 && this.enemies.length < 105) {
+          e.summonT = 5.5;
+          for (let k = 0; k < 2; k++) this.spawnEnemy('melee');
+          this.burst(e.x, e.y, 12, 0xFFB18CFF, 180);
+          this.floatText(e.x, e.y - e.r - 10, 'ПРИЗЫВ!', 0xFFB18CFF, 13);
+        }
+      } else if (e.type === 'hunter') {
+        // Hunter circles the player and periodically lunges from a flank.
+        const side = e.strafe || (e.strafe = Math.random() < 0.5 ? -1 : 1);
+        const tangentX = -dirToP.y * side, tangentY = dirToP.x * side;
+        const approach = distP > 260 ? 0.55 : distP < 150 ? -0.8 : 0.15;
+        if (emul > 0) map.moveWithCollision(e, (tangentX + dirToP.x * approach) * e.speed * sdt * emul, (tangentY + dirToP.y * approach) * e.speed * sdt * emul);
+        e.fireCd -= sdt;
+        if (e.fireCd <= 0 && distP < 620) {
+          e.fireCd = 2.2;
+          const ba = Math.atan2(p.y - e.y, p.x - e.x);
+          this.bullets.push({ x:e.x, y:e.y, vx:Math.cos(ba)*620, vy:Math.sin(ba)*620, r:6, friendly:false, dmg:2, pierce:1, splash:0, dead:false });
+          this.burst(e.x, e.y, 5, 0xFFFF4D6D, 150);
+        }
+      } else if (e.type === 'mine') {
+        // Mines are slow pressure objects: proximity detonates a local burst.
+        if (distP < 105 && p.invuln <= 0) {
+          this.burst(e.x, e.y, 24, 0xFFFF8800, 260);
+          this.ring(e.x, e.y, 0xFFFF8800, 105, 0.45, 4);
+          this.damagePlayer(3);
+          e.dead = true;
+        } else if (emul > 0) {
+          map.moveWithCollision(e, hx * e.speed * 0.45 * sdt * emul, hy * e.speed * 0.45 * sdt * emul);
+        }
       } else if (e.type === 'shooter') {
         // Shooter: keep optimal range, strafe, lead the target
         const los = map.raycastClear(e.x, e.y, p.x, p.y);
@@ -1795,7 +2290,8 @@ class GameState {
           map.moveWithCollision(e, (hxm / m) * e.speed * sdt * emul, (hym / m) * e.speed * sdt * emul);
         }
       } else {
-        // Melee / tank / brute: relentless pursuit + physical separation (no clumping)
+        // Melee / tank / brute / splitter / shieldbearer: relentless pursuit + separation
+        // Splitters are durable frontliners; shieldbearers move more slowly but resist shots.
         if (emul > 0) {
           map.moveWithCollision(e, hx * e.speed * sdt * emul, hy * e.speed * sdt * emul);
           const sep = sepMap.get(e);
@@ -1858,7 +2354,7 @@ class GameState {
           for (const t of targets) {
             if (t.dead) continue;
             if (Math.hypot(t.x - b.x, t.y - b.y) < b.splash) {
-              const splashDmg = t.elite && t.elite === ELITE_MODS.shield ? Math.max(1, Math.floor(Math.max(1, Math.round(b.dmg * 0.5)) / 2)) : Math.max(1, Math.round(b.dmg * 0.5));
+              const splashDmg = Math.max(1, Math.floor((t.elite && t.elite === ELITE_MODS.shield ? Math.max(1, Math.round(b.dmg * 0.5)) / 2 : Math.max(1, Math.round(b.dmg * 0.5)) * (t.damageMul || 1))));
               t.hp -= splashDmg;
               t.flash = 1;
               this.floatText(t.x + (Math.random() - 0.5) * 12, t.y - t.r - 6, String(splashDmg), 0xFFFF8800, 12);
@@ -1890,7 +2386,7 @@ class GameState {
               const rr = b.r + e.r;
               if (Math.hypot(b.x - e.x, b.y - e.y) < rr) {
                 // Elite shield: take half damage
-                e.hp -= e.elite && e.elite === ELITE_MODS.shield ? Math.max(1, Math.floor(b.dmg / 2)) : b.dmg;
+                e.hp -= Math.max(1, Math.floor((e.elite && e.elite === ELITE_MODS.shield ? b.dmg * 0.5 : b.dmg) * (e.damageMul || 1)));
                 e.flash = 1;
                 // Frost: slow the enemy
                 if (b.slow > 0) {
@@ -1924,7 +2420,7 @@ class GameState {
                   while (remaining > 0 && chainPool.length > 0) {
                     const t = chainPool[0];
                     chainPool = chainPool.filter(x => x !== t);
-                    const cDmg = t.elite && t.elite === ELITE_MODS.shield ? Math.max(1, Math.floor(Math.max(1, Math.round(b.dmg * 0.5)) / 2)) : Math.max(1, Math.round(b.dmg * 0.5));
+                    const cDmg = Math.max(1, Math.floor((t.elite && t.elite === ELITE_MODS.shield ? Math.max(1, Math.round(b.dmg * 0.5)) / 2 : Math.max(1, Math.round(b.dmg * 0.5)) * (t.damageMul || 1))));
                     t.hp -= cDmg;
                     t.flash = 1;
                     this.floatText(t.x, t.y - t.r - 6, String(cDmg), 0xFF5AD1FF, 12);
@@ -1940,7 +2436,7 @@ class GameState {
                   for (const t of targets) {
                     if (t.dead || t === e) continue;
                     if (Math.hypot(t.x - b.x, t.y - b.y) < b.splash) {
-                      const splashDmg = t.elite && t.elite === ELITE_MODS.shield ? Math.max(1, Math.floor(Math.max(1, Math.round(b.dmg * 0.5)) / 2)) : Math.max(1, Math.round(b.dmg * 0.5));
+                      const splashDmg = Math.max(1, Math.floor((t.elite && t.elite === ELITE_MODS.shield ? Math.max(1, Math.round(b.dmg * 0.5)) / 2 : Math.max(1, Math.round(b.dmg * 0.5)) * (t.damageMul || 1))));
                       t.hp -= splashDmg;
                       t.flash = 1;
                       this.floatText(t.x + (Math.random() - 0.5) * 12, t.y - t.r - 6, String(splashDmg), 0xFFFF8800, 12);
@@ -2009,10 +2505,30 @@ class GameState {
     Sfx.form();
   }
 
-  spawnEnemy() {
+  spawnSquad(kind = 'pressure') {
+    const d = this.director || { pressure: 0.3 };
+    const maxExtra = kind === 'ambush' ? 5 : kind === 'hunt' ? 4 : 3;
+    const available = Math.max(0, 110 - this.enemies.length);
+    const count = Math.min(maxExtra, available);
+    if (count <= 0) return;
     const cfg = this.levelCfg;
-    const type = cfg.enemyTypes[Math.floor(Math.random() * cfg.enemyTypes.length)];
-    const base = ENEMY_BASE[type];
+    const roleSets = {
+      pressure: ['melee', 'charger', 'shooter'],
+      ambush: ['charger', 'hunter', 'melee', 'shooter'],
+      hunt: ['hunter', 'hunter', 'charger', 'shooter']
+    };
+    const roles = roleSets[kind] || roleSets.pressure;
+    for (let i = 0; i < count; i++) {
+      const preferred = roles[Math.floor(Math.random() * roles.length)];
+      const type = cfg.enemyTypes.includes(preferred) ? preferred : cfg.enemyTypes[Math.floor(Math.random() * cfg.enemyTypes.length)];
+      this.spawnEnemy(type, kind === 'hunt' && i === 0);
+    }
+  }
+
+  spawnEnemy(forcedType = null, objectiveTarget = false) {
+    const cfg = this.levelCfg;
+    const type = forcedType || cfg.enemyTypes[Math.floor(Math.random() * cfg.enemyTypes.length)];
+    const base = ENEMY_BASE[type] || ENEMY_BASE.melee;
     const map = new GameMap(this.mapData.grid);
     const spot = map.randomFloorTileFar(this.player.x, this.player.y, Math.max(this.viewW, this.viewH) * 0.7);
     const power = Math.min(3, this.globalPower);
@@ -2022,6 +2538,13 @@ class GameState {
       const eliteChance = Math.min(0.5, 0.22 + this.level * 0.05);
       if (Math.random() < eliteChance) elite = ELITE_MODS[ELITE_KEYS[Math.floor(Math.random() * ELITE_KEYS.length)]];
     }
+    // The hunt objective always creates one marked elite, even on non-hard floors.
+    const objective = this.floorProfile?.objective;
+    const needsMarkedElite = objective?.id === 'elite' && !this.enemies.some(e => e.objectiveTarget);
+    if (needsMarkedElite) {
+      elite = elite || ELITE_MODS[ELITE_KEYS[Math.floor(Math.random() * ELITE_KEYS.length)]];
+      objectiveTarget = true;
+    }
     const hp = Math.max(1, Math.round(base.hp * cfg.hpMul * power * (elite ? elite.hpMul : 1)));
     this.enemies.push({
       x: spot[0], y: spot[1], r: base.r, type, hp, maxHp: hp,
@@ -2029,7 +2552,9 @@ class GameState {
       fireCd: base.fireCd, burstCd: 1.6,
       jitter: (Math.random() - 0.5) * 0.5,
       dead: false, flash: 0, isBoss: false,
-      elite: elite, dotDmg: elite ? elite.dot : 0, dotDur: elite ? elite.dotDur : 0
+      elite: elite, objectiveTarget: !!objectiveTarget,
+      damageMul: type === 'shieldbearer' ? 0.5 : 1,
+      summonT: 3 + Math.random() * 2, dotDmg: elite ? elite.dot : 0, dotDur: elite ? elite.dotDur : 0
     });
   }
 
@@ -2081,6 +2606,14 @@ class GameState {
       return;
     }
     this.kills++;
+    if (this.floorProfile?.objective?.id === 'kills') this.objectiveKills++;
+    if (e.objectiveTarget) this.objectiveTargetKilled = true;
+    if (e.type === 'splitter' && this.enemies.length < 106) {
+      // A splitter turns one dangerous target into two weaker threats.
+      this.burst(e.x, e.y, 16, 0xFF9B6A3C, 220);
+      this.spawnEnemy('charger');
+      this.spawnEnemy('charger');
+    }
     // Kill effects: burst scaled by enemy type + shockwave + XP popup
     const killInfo = {
       brute:   { color: 0xFF7A5A3E, xp: 5, count: 26, speed: 300, ring: 80,  ringColor: 0xFF7A5A3E },
@@ -2287,6 +2820,7 @@ class GameState {
       return;
     }
     const dmg = Math.max(1, Math.round(amount * this.getIncomingDmgMul()));
+    if (this.director) this.director.damageWindow = Math.min(1.5, (this.director.damageWindow || 0) + dmg * 0.08);
     p.hp -= dmg;
     p.invuln = 0.4;
     this.flash = Math.max(this.flash, 0.25);
@@ -2385,6 +2919,9 @@ function render(ctx, gs) {
   const camX = gs.camera.x;
   const camY = gs.camera.y;
   const tileSz = TILE;
+  const biomeId = gs.floorProfile?.biome?.id;
+  const biomeFloor = biomeId === 'ash' ? ['#281C1A', '#241817'] : biomeId === 'frost' ? ['#1C2933', '#18242E'] : biomeId === 'toxic' ? ['#1C2A21', '#18251E'] : biomeId === 'time' ? ['#241D35', '#20192F'] : ['#1C202C', '#191D27'];
+  const biomeWall = biomeId === 'ash' ? ['#49302A', '#3E2925'] : biomeId === 'frost' ? ['#30424B', '#293941'] : biomeId === 'toxic' ? ['#2A4631', '#243B2A'] : biomeId === 'time' ? ['#3B2E52', '#332744'] : ['#3A2E2A', '#332824'];
 
   // 1. Map tiles
   const tx0 = Math.max(0, Math.floor(camX / tileSz) - 1);
@@ -2399,13 +2936,13 @@ function render(ctx, gs) {
       const x = tx * tileSz - camX;
       const y = ty * tileSz - camY;
       if (wall) {
-        ctx.fillStyle = (tx + ty) % 2 === 0 ? '#3A2E2A' : '#332824';
+        ctx.fillStyle = (tx + ty) % 2 === 0 ? biomeWall[0] : biomeWall[1];
         ctx.fillRect(x, y, tileSz, tileSz);
         ctx.strokeStyle = 'rgba(0,0,0,0.31)';
         ctx.lineWidth = 1;
         ctx.strokeRect(x + 1, y + 1, tileSz - 2, tileSz - 2);
       } else {
-        ctx.fillStyle = (tx + ty) % 2 === 0 ? '#1C202C' : '#191D27';
+        ctx.fillStyle = (tx + ty) % 2 === 0 ? biomeFloor[0] : biomeFloor[1];
         ctx.fillRect(x, y, tileSz, tileSz);
       }
     }
@@ -2528,6 +3065,53 @@ function render(ctx, gs) {
     ctx.fill();
   }
 
+  // 1.8 Biome hazards and objective beacons
+  const biome = gs.floorProfile?.biome;
+  if (biome) {
+    const hazardRgb = biome.hazard === 'burn' ? '255,102,0' : biome.hazard === 'slow' ? '127,227,255' : biome.hazard === 'poison' ? '125,255,114' : '177,140,255';
+    for (const h of gs.mapData.hazards || []) {
+      const hx = h.x - camX, hy = h.y - camY;
+      const pulse = 0.55 + 0.25 * Math.sin(performance.now() / 500 + h.phase);
+      const grad = ctx.createRadialGradient(hx, hy, 8, hx, hy, h.radius);
+      grad.addColorStop(0, `rgba(${hazardRgb},${0.22 * pulse})`);
+      grad.addColorStop(1, `rgba(${hazardRgb},0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(hx, hy, h.radius, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = `rgba(${hazardRgb},${0.35 * pulse})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(hx, hy, h.radius * 0.72, 0, Math.PI * 2); ctx.stroke();
+    }
+    for (const beacon of gs.mapData.beacons || []) {
+      const bx = beacon.x - camX, by = beacon.y - camY;
+      const pulse = 0.65 + 0.35 * Math.sin(performance.now() / 350 + beacon.x * 0.01);
+      ctx.strokeStyle = beacon.active ? '#5AFFA0' : `rgba(90,209,255,${pulse})`;
+      ctx.lineWidth = beacon.active ? 4 : 2;
+      ctx.beginPath(); ctx.arc(bx, by, 18 + pulse * 5, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = beacon.active ? '#5AFFA0' : '#5AD1FF';
+      ctx.beginPath(); ctx.arc(bx, by, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#E8E2D0';
+      ctx.font = "bold 10px 'Courier New', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText(beacon.active ? 'OK' : 'МАЯК', bx, by - 25);
+      ctx.textAlign = 'start';
+    }
+    for (const chest of gs.mapData.cursedChests || []) {
+      if (chest.used) continue;
+      const cx3 = chest.x - camX, cy3 = chest.y - camY;
+      ctx.strokeStyle = 'rgba(255,61,0,0.85)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx3, cy3, 16 + Math.sin(performance.now() / 160) * 3, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#6B1A13'; ctx.fillRect(cx3 - 12, cy3 - 7, 24, 14);
+      ctx.fillStyle = '#FF3D00'; ctx.fillRect(cx3 - 3, cy3 - 2, 6, 6);
+    }
+    for (const altar of gs.mapData.altars || []) {
+      const ax = altar.x - camX, ay = altar.y - camY;
+      ctx.strokeStyle = altar.used ? 'rgba(168,161,150,0.35)' : 'rgba(255,215,0,0.9)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(ax, ay, 15 + Math.sin(performance.now() / 260) * 2, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = altar.used ? '#6B665D' : '#FFD700';
+      ctx.beginPath(); ctx.moveTo(ax, ay - 9); ctx.lineTo(ax + 9, ay + 8); ctx.lineTo(ax - 9, ay + 8); ctx.closePath(); ctx.fill();
+    }
+  }
+
   // 2. Particles
   for (const pt of gs.particles) {
     const col = hexToRgb(pt.color);
@@ -2627,6 +3211,11 @@ function render(ctx, gs) {
     else if (e.type === 'tank') baseColor = '#5A3A86';
     else if (e.type === 'charger') baseColor = '#C9901E';
     else if (e.type === 'brute') baseColor = '#7A5A3E';
+    else if (e.type === 'summoner') baseColor = '#B18CFF';
+    else if (e.type === 'hunter') baseColor = '#FF4D6D';
+    else if (e.type === 'splitter') baseColor = '#9B6A3C';
+    else if (e.type === 'mine') baseColor = '#FF8800';
+    else if (e.type === 'shieldbearer') baseColor = '#4CAF50';
     else baseColor = '#C41E3A';
 
     // Elite: pulsing glow aura + tinted core
@@ -2707,6 +3296,25 @@ function render(ctx, gs) {
       ctx.beginPath();
       ctx.arc(e.x - camX, e.y - camY, e.r * 1.35, 0, Math.PI * 2);
       ctx.stroke();
+    } else if (e.type === 'summoner') {
+      ctx.strokeStyle = '#E0C8FF'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(e.x - camX, e.y - camY, e.r * 0.55, 0, Math.PI * 2); ctx.stroke();
+    } else if (e.type === 'hunter') {
+      ctx.fillStyle = '#FFE0E8';
+      ctx.beginPath(); ctx.moveTo(e.x - camX, e.y - camY - e.r - 5); ctx.lineTo(e.x - camX + 5, e.y - camY); ctx.lineTo(e.x - camX, e.y - camY + e.r + 5); ctx.lineTo(e.x - camX - 5, e.y - camY); ctx.closePath(); ctx.fill();
+    } else if (e.type === 'mine') {
+      ctx.strokeStyle = '#3A2E2A'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(e.x - camX, e.y - camY, e.r + 5 + Math.sin(performance.now() / 120) * 2, 0, Math.PI * 2); ctx.stroke();
+    } else if (e.type === 'shieldbearer') {
+      ctx.strokeStyle = '#C8FFD0'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(e.x - camX, e.y - camY, e.r * 1.25, -1.2, 1.2); ctx.stroke();
+    }
+
+    if (e.objectiveTarget) {
+      ctx.strokeStyle = '#FFFFD700'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(e.x - camX, e.y - camY, e.r + 15 + Math.sin(performance.now() / 180) * 3, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#FFFFD700'; ctx.font = "bold 11px 'Courier New', monospace"; ctx.textAlign = 'center';
+      ctx.fillText('ЦЕЛЬ', e.x - camX, e.y - camY - e.r - 34); ctx.textAlign = 'start';
     }
 
     // Health bar
@@ -2924,7 +3532,17 @@ function updateHUD(gs) {
           <div style="height:100%;width:${Math.max(0, Math.round(p.xp / p.xpToNext * 100))}%;background:#5AD1FF;transition:width 0.1s;"></div>
         </div>
         <span style="font-size:11px;color:#5AD1FF">${p.skillPoints > 0 ? '<button id="hud-skill-btn" style="background:#5AD1FF;color:#0A0A0A;border:none;border-radius:4px;padding:1px 6px;font-weight:bold;font-size:11px;cursor:pointer;">ДЕРЕВО ⚡' + p.skillPoints + '</button>' : ''}</span>
-      </div>`;
+      </div>` +
+      (() => {
+        const o = gs.floorProfile?.objective;
+        const b = gs.floorProfile?.biome;
+        if (!o || !b) return '';
+        const progress = o.id === 'rush' ? `${Math.ceil(Math.max(0, o.timer))}с` : `${Math.min(o.target, Math.floor(o.progress || 0))}/${o.target}`;
+        const state = o.complete ? '✓ ВЫПОЛНЕНО' : o.failed ? '✕ ПРОВАЛЕНО' : progress;
+        const event = gs.director?.activeEvent ? ` · ${gs.director.activeEvent}` : '';
+        const pressure = Math.round((gs.director?.pressure || 0) * 100);
+        return `<div style="margin-top:4px;color:${b.color};font-size:11px;max-width:430px;">${b.icon} ${b.name} · ${o.name}: ${state}${event} <span style="color:#A8A196">· НАТИСК ${pressure}%</span></div>`;
+      })();
 
     // All weapons with levels (Vampire Survivors style)
     const weaponIcons = p.weapons.map(wp => {
@@ -3079,6 +3697,29 @@ function renderMinimap(gs) {
     ctx.fill();
   }
 
+  // Objective beacons are revealed only after exploring their tile.
+  for (const beacon of gs.mapData.beacons || []) {
+    const btx = Math.floor(beacon.x / TILE), bty = Math.floor(beacon.y / TILE);
+    if (!exA[bty * MAP_W + btx]) continue;
+    const bx = (beacon.x / TILE) * tileW, by = (beacon.y / TILE) * tileH;
+    ctx.fillStyle = beacon.active ? '#5AFFA0' : '#5AD1FF';
+    ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = beacon.active ? '#5AFFA0' : '#5AD1FF';
+    ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(bx, by, 5, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  // Optional risk/reward points — revealed by exploration, never teleports.
+  for (const chest of gs.mapData.cursedChests || []) {
+    if (chest.used || !exA[Math.floor(chest.y / TILE) * MAP_W + Math.floor(chest.x / TILE)]) continue;
+    ctx.fillStyle = '#FF3D00';
+    ctx.beginPath(); ctx.arc((chest.x / TILE) * tileW, (chest.y / TILE) * tileH, 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+  for (const altar of gs.mapData.altars || []) {
+    if (!exA[Math.floor(altar.y / TILE) * MAP_W + Math.floor(altar.x / TILE)]) continue;
+    ctx.fillStyle = altar.used ? '#5A554B' : '#FFD700';
+    ctx.beginPath(); ctx.arc((altar.x / TILE) * tileW, (altar.y / TILE) * tileH, 2, 0, Math.PI * 2); ctx.fill();
+  }
+
   // Enemies — only visible while their tile is in your current view
   const allEnemies = gs.boss ? [...gs.enemies, gs.boss] : gs.enemies;
   for (const e of allEnemies) {
@@ -3143,15 +3784,16 @@ document.addEventListener('mousemove', (e) => {
 
 document.addEventListener('mousedown', (e) => {
   if (!game) return;
+  const canvas = document.getElementById('gameCanvas');
   if (game.status === 'play') {
     game.fireRequest = true;
-    const canvas = document.getElementById('gameCanvas');
     const rect = canvas.getBoundingClientRect();
     const scaleX = game.viewW / rect.width;
     const scaleY = game.viewH / rect.height;
     game.aimX = (e.clientX - rect.left) * scaleX + game.camera.x;
     game.aimY = (e.clientY - rect.top) * scaleY + game.camera.y;
-  } else {
+  } else if (e.target === canvas) {
+    // Only the game surface starts a run; clicking settings/menu controls must not.
     handleTap();
   }
 });
@@ -3221,7 +3863,7 @@ joystickArea.addEventListener('touchstart', (e) => {
   const touch = e.changedTouches[0];
   joystickTouchId = touch.identifier;
   processJoystick(touch.clientX, touch.clientY);
-});
+}, { passive: false });
 
 joystickArea.addEventListener('touchmove', (e) => {
   e.preventDefault();
@@ -3230,7 +3872,7 @@ joystickArea.addEventListener('touchmove', (e) => {
       processJoystick(touch.clientX, touch.clientY);
     }
   }
-});
+}, { passive: false });
 
 joystickArea.addEventListener('touchend', (e) => {
   for (const touch of e.changedTouches) {
@@ -3238,14 +3880,16 @@ joystickArea.addEventListener('touchend', (e) => {
       resetJoystick();
     }
   }
-});
+}, { passive: false });
 
-joystickArea.addEventListener('touchcancel', resetJoystick);
+joystickArea.addEventListener('touchcancel', resetJoystick, { passive: false });
+document.addEventListener('touchcancel', resetJoystick, { passive: false });
 
 // Touch aim + fire on canvas
 let fireTouchId = null;
 document.getElementById('gameCanvas').addEventListener('touchstart', (e) => {
   if (!game) return;
+  e.preventDefault();
   if (game.status === 'menu' || game.status === 'death') {
     handleTap();
     return;
@@ -3259,10 +3903,11 @@ document.getElementById('gameCanvas').addEventListener('touchstart', (e) => {
   const scaleY = game.viewH / rect.height;
   game.aimX = (touch.clientX - rect.left) * scaleX + game.camera.x;
   game.aimY = (touch.clientY - rect.top) * scaleY + game.camera.y;
-});
+}, { passive: false });
 
 document.getElementById('gameCanvas').addEventListener('touchmove', (e) => {
   if (!game || game.status !== 'play') return;
+  e.preventDefault();
   for (const touch of e.changedTouches) {
     if (touch.identifier === fireTouchId) {
       const canvas = document.getElementById('gameCanvas');
@@ -3273,16 +3918,17 @@ document.getElementById('gameCanvas').addEventListener('touchmove', (e) => {
       game.aimY = (touch.clientY - rect.top) * scaleY + game.camera.y;
     }
   }
-});
+}, { passive: false });
 
 document.getElementById('gameCanvas').addEventListener('touchend', (e) => {
+  e.preventDefault();
   for (const touch of e.changedTouches) {
     if (touch.identifier === fireTouchId) {
       if (game) game.fireRequest = false;
       fireTouchId = null;
     }
   }
-});
+}, { passive: false });
 
 // Button handlers
 document.getElementById('btn-reload').addEventListener('click', () => {
@@ -3291,14 +3937,14 @@ document.getElementById('btn-reload').addEventListener('click', () => {
 document.getElementById('btn-reload').addEventListener('touchstart', (e) => {
   e.preventDefault();
   if (game) game.reloadWeapon();
-});
+}, { passive: false });
 document.getElementById('btn-dash').addEventListener('click', () => {
   if (game) game.tryDash();
 });
 document.getElementById('btn-dash').addEventListener('touchstart', (e) => {
   e.preventDefault();
   if (game) game.tryDash();
-});
+}, { passive: false });
 
 // Name entry
 document.getElementById('submit-score').addEventListener('click', () => {
@@ -3334,6 +3980,8 @@ const Settings = {
   volume: 0.7,
   soundOn: true,
   difficulty: 'normal',
+  scale: 1,
+  quality: 'auto',
   load() {
     try {
       const v = parseFloat(localStorage.getItem('mysorubka_volume'));
@@ -3343,6 +3991,10 @@ const Settings = {
       else if (s === 'on') this.soundOn = true;
       const d = localStorage.getItem('mysorubka_difficulty');
       if (d === 'easy' || d === 'normal' || d === 'hard') this.difficulty = d;
+      const z = parseFloat(localStorage.getItem('mysorubka_scale'));
+      if (Number.isFinite(z)) this.scale = Math.max(0.85, Math.min(1.15, z));
+      const q = localStorage.getItem('mysorubka_quality');
+      if (q === 'auto' || q === 'performance' || q === 'quality') this.quality = q;
     } catch (e) {}
   },
   save() {
@@ -3350,10 +4002,45 @@ const Settings = {
       localStorage.setItem('mysorubka_volume', String(this.volume));
       localStorage.setItem('mysorubka_sound', this.soundOn ? 'on' : 'off');
       localStorage.setItem('mysorubka_difficulty', this.difficulty);
+      localStorage.setItem('mysorubka_scale', String(this.scale));
+      localStorage.setItem('mysorubka_quality', this.quality);
     } catch (e) {}
   }
 };
 Settings.load();
+
+// Canvas viewport: CSS pixels, logical world size and physical backing store are separate.
+const viewportState = { width: 0, height: 0, dpr: 0, scale: 0, quality: '' };
+function getRenderDpr() {
+  const device = Math.max(1, window.devicePixelRatio || 1);
+  if (Settings.quality === 'performance') return 1;
+  if (Settings.quality === 'quality') return Math.min(device, 2);
+  return Math.min(device, 1.5);
+}
+function resizeGameViewport() {
+  const container = document.getElementById('game-container');
+  const canvas = document.getElementById('gameCanvas');
+  if (!container || !canvas || !game) return;
+  const width = Math.max(1, Math.round(container.clientWidth));
+  const height = Math.max(1, Math.round(container.clientHeight));
+  const scale = Math.max(0.85, Math.min(1.15, Settings.scale || 1));
+  const dpr = getRenderDpr();
+  const changed = viewportState.width !== width || viewportState.height !== height || viewportState.dpr !== dpr || viewportState.scale !== scale || viewportState.quality !== Settings.quality;
+  if (!changed) return;
+  viewportState.width = width;
+  viewportState.height = height;
+  viewportState.dpr = dpr;
+  viewportState.scale = scale;
+  viewportState.quality = Settings.quality;
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  canvas.width = Math.max(1, Math.round(width * dpr));
+  canvas.height = Math.max(1, Math.round(height * dpr));
+  game.viewW = width / scale;
+  game.viewH = height / scale;
+  game.renderDpr = dpr;
+  game.renderScale = scale;
+}
 
 const Sfx = (() => {
   let ctx = null;
@@ -4010,6 +4697,12 @@ const settingsMuteBtn = document.getElementById('settings-mute');
 
 volumeSlider.value = Math.round(Settings.volume * 100);
 volumeValue.textContent = volumeSlider.value + '%';
+const scaleSlider = document.getElementById('scale-slider');
+const scaleValue = document.getElementById('scale-value');
+const qualitySelect = document.getElementById('render-quality');
+scaleSlider.value = Math.round(Settings.scale * 100);
+scaleValue.textContent = scaleSlider.value + '%';
+qualitySelect.value = Settings.quality;
 
 function updateSettingsMuteBtn() {
   settingsMuteBtn.textContent = Sfx.isEnabled() ? '🔊 Звук: вкл' : '🔇 Звук: выкл';
@@ -4028,8 +4721,20 @@ volumeSlider.addEventListener('input', () => {
   Settings.volume = v;
   Settings.save();
   Sfx.setVolume(v);
-  // Quiet feedback blip so you hear the level
   Sfx.tone(440, 0.05, 'sine', 0.12, 0);
+});
+
+scaleSlider.addEventListener('input', () => {
+  Settings.scale = Math.max(0.85, Math.min(1.15, parseInt(scaleSlider.value, 10) / 100));
+  scaleValue.textContent = scaleSlider.value + '%';
+  Settings.save();
+  resizeGameViewport();
+});
+
+qualitySelect.addEventListener('change', () => {
+  Settings.quality = qualitySelect.value === 'performance' || qualitySelect.value === 'quality' ? qualitySelect.value : 'auto';
+  Settings.save();
+  resizeGameViewport();
 });
 
 settingsMuteBtn.addEventListener('click', (e) => {
@@ -4205,6 +4910,7 @@ function gameLoop(timestamp) {
 
   if (game.status === 'play') game.playTime += dt;
 
+  resizeGameViewport();
   game.update(dt);
 
   // Background music intensity: smooth ramp, scales with boss proximity
@@ -4225,23 +4931,12 @@ function gameLoop(timestamp) {
   Music.setIntensity(mIntensity);
   Music.update(dt);
 
-  // Resize canvas
   const canvas = document.getElementById('gameCanvas');
-  const container = document.getElementById('game-container');
-  const cw = container.clientWidth;
-  const ch = container.clientHeight;
-  if (canvas.width !== cw || canvas.height !== ch) {
-    canvas.width = cw;
-    canvas.height = ch;
-  }
-
-  game.viewW = cw;
-  game.viewH = ch;
-
   const ctx = canvas.getContext('2d');
   ctx.save();
 
-  // Scale to fit
+  // Render in logical world units while retaining a crisp DPR-backed canvas.
+  ctx.setTransform((game.renderDpr || 1) * (game.renderScale || 1), 0, 0, (game.renderDpr || 1) * (game.renderScale || 1), 0, 0);
   render(ctx, game);
   ctx.restore();
 
@@ -4335,11 +5030,14 @@ startSplash();
 //  INIT
 // ============================================================
 game = new GameState();
+resizeGameViewport();
 lastTime = 0;
 animFrameId = requestAnimationFrame(gameLoop);
 
-// Window resize
-window.addEventListener('resize', () => {});
+// Resize/orientation changes update the viewport immediately; the loop remains the source of truth.
+window.addEventListener('resize', resizeGameViewport, { passive: true });
+window.addEventListener('orientationchange', () => setTimeout(resizeGameViewport, 80), { passive: true });
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resizeGameViewport, { passive: true });
 </script>
 </body>
 </html>

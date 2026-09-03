@@ -20,6 +20,7 @@
     display: block; background: #0A0A0A;
     width: 100%; height: 100%; object-fit: contain;
     touch-action: none;
+    image-rendering: pixelated;
   }
   #hud {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -2855,6 +2856,138 @@ function easeOutBack(x) {
   return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
 }
 
+
+// ============================================================
+//  PIXEL HUMAN SPRITES (little pixel guys)
+// ============================================================
+function pxDark(hex, k) {
+  const c = hexToRgb(hex);
+  const f = (n) => Math.max(0, Math.min(255, Math.round(n * k))).toString(16).padStart(2, '0');
+  return '#' + f(c.r) + f(c.g) + f(c.b);
+}
+const pxPalCache = new Map();
+function charPalette(body) {
+  let p = pxPalCache.get(body);
+  if (p) return p;
+  p = { S: '#EAC39B', H: '#241D16', C: body, D: pxDark(body, 0.62), B: '#14100C', E: '#0E0A07' };
+  pxPalCache.set(body, p);
+  return p;
+}
+const WHITE_PAL = { S: '#FFFFFF', H: '#FFFFFF', C: '#FFFFFF', D: '#FFFFFF', B: '#FFFFFF', E: '#FFFFFF' };
+const PX_IMG_CACHE = new Map();
+function pxFrameCanvas(pal, frame) {
+  const key = (pal === WHITE_PAL ? 'w' : pal.C) + '|' + frame;
+  let cv = PX_IMG_CACHE.get(key);
+  if (cv) return cv;
+  const W = 11, H = 15;
+  cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const c = cv.getContext('2d');
+  const cell = (x, y, col) => { if (col) { c.fillStyle = col; c.fillRect(x, y, 1, 1); } };
+  const rect = (x0, x1, y0, y1, col) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) cell(x, y, col); };
+  rect(3, 7, 0, 0, pal.H);
+  rect(2, 8, 1, 2, pal.H);
+  rect(2, 8, 3, 5, pal.S);
+  cell(4, 4, pal.E);
+  cell(6, 4, pal.E);
+  rect(4, 6, 6, 6, pal.C);
+  rect(2, 8, 7, 9, pal.C);
+  cell(1, 8, pal.S); cell(1, 9, pal.S);
+  cell(9, 8, pal.S); cell(9, 9, pal.S);
+  rect(2, 8, 10, 10, pal.D);
+  if (frame === 0) {
+    rect(3, 4, 11, 12, pal.D);
+    rect(6, 7, 11, 12, pal.D);
+    rect(3, 4, 13, 14, pal.B);
+    rect(6, 7, 13, 14, pal.B);
+  } else {
+    rect(2, 3, 11, 12, pal.D);
+    rect(7, 8, 11, 12, pal.D);
+    rect(2, 3, 13, 14, pal.B);
+    rect(7, 8, 13, 14, pal.B);
+  }
+  PX_IMG_CACHE.set(key, cv);
+  return cv;
+}
+function drawPxGuy(ctx, sx, sy, r, bodyColor, frame, flip, white) {
+  const pal = white ? WHITE_PAL : charPalette(bodyColor);
+  const cv = pxFrameCanvas(pal, frame);
+  const cell = Math.max(1, Math.round((r * 2) / 11));
+  const w = cv.width * cell, h = cv.height * cell;
+  const prev = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = false;
+  ctx.save();
+  ctx.translate(sx, sy);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(cv, -w / 2, -h / 2, w, h);
+  ctx.restore();
+  ctx.imageSmoothingEnabled = prev;
+}
+function pxFrameTick(seed) { return (Math.floor(performance.now() / 160) + Math.floor(seed * 7)) % 2; }
+function pxSeededRand(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+// Bake one 80x80 pixel-art tile (floor speckle noise / brick walls).
+// Each "pixel" is an 8px cell => 10x10 grid per tile.
+function buildPixelTile(hex, wall) {
+  const S = TILE, N = 10;
+  const cv = document.createElement('canvas');
+  cv.width = S; cv.height = S;
+  const c = cv.getContext('2d');
+  const seed = (parseInt(String(hex).replace('#', ''), 16) || 1) >>> 0;
+  const rnd = pxSeededRand(seed + (wall ? 0x9E3779B9 : 0x85EBCA6B));
+  const dark = pxDark(hex, 0.72);
+  const light = pxDark(hex, 1.16);
+  c.fillStyle = hex; c.fillRect(0, 0, S, S);
+  if (!wall) {
+    for (let i = 0; i < 26; i++) {
+      const x = (rnd() * N) | 0, y = (rnd() * N) | 0;
+      c.fillStyle = rnd() < 0.5 ? light : dark;
+      c.fillRect(x * 8, y * 8, 8, 8);
+    }
+    for (let i = 0; i < 4; i++) {
+      const x = (rnd() * (N - 1)) | 0, y = (rnd() * (N - 1)) | 0;
+      c.fillStyle = 'rgba(0,0,0,0.10)';
+      c.fillRect(x * 8, y * 8, 16, 16);
+    }
+  } else {
+    const mortar = pxDark(hex, 0.45);
+    c.fillStyle = mortar; c.fillRect(0, 0, S, S);
+    for (let cy = 0; cy < N; cy++) {
+      if (cy % 3 === 2) continue; // horizontal mortar
+      const band = cy >= 9 ? 3 : cy >= 6 ? 2 : cy >= 3 ? 1 : 0;
+      const off = (band & 1) * 2;
+      for (let cx = 0; cx < N; cx++) {
+        if (((cx + off) % 5) === 4) continue; // vertical mortar
+        const top = cy % 3 === 0;
+        c.fillStyle = top ? light : (((cx + cy * 2) & 1) ? pxDark(hex, 0.92) : hex);
+        c.fillRect(cx * 8, cy * 8, 8, 8);
+      }
+    }
+  }
+  return cv;
+}
+const PX_TILE_SETS = new Map();
+function getPixelTileSet(biomeId, floorCols, wallCols) {
+  const key = (biomeId || 'dflt') + '|' + floorCols[0] + '|' + wallCols[0];
+  let set = PX_TILE_SETS.get(key);
+  if (!set) {
+    set = {
+      f: [buildPixelTile(floorCols[0], false), buildPixelTile(floorCols[1], false)],
+      w: [buildPixelTile(wallCols[0], true), buildPixelTile(wallCols[1], true)]
+    };
+    PX_TILE_SETS.set(key, set);
+  }
+  return set;
+}
+
+
 function render(ctx, gs) {
   const W = gs.viewW;
   const H = gs.viewH;
@@ -2929,24 +3062,20 @@ function render(ctx, gs) {
   const tx1 = Math.min(MAP_W, Math.floor((camX + W) / tileSz) + 1);
   const ty1 = Math.min(MAP_H, Math.floor((camY + H) / tileSz) + 1);
 
+  const pixSet = getPixelTileSet(biomeId, biomeFloor, biomeWall);
+  const prevSm = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = false;
   for (let ty = ty0; ty < ty1; ty++) {
     for (let tx = tx0; tx < tx1; tx++) {
       const idx = ty * MAP_W + tx;
       const wall = gs.mapData.grid[idx] === 1;
-      const x = tx * tileSz - camX;
-      const y = ty * tileSz - camY;
-      if (wall) {
-        ctx.fillStyle = (tx + ty) % 2 === 0 ? biomeWall[0] : biomeWall[1];
-        ctx.fillRect(x, y, tileSz, tileSz);
-        ctx.strokeStyle = 'rgba(0,0,0,0.31)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x + 1, y + 1, tileSz - 2, tileSz - 2);
-      } else {
-        ctx.fillStyle = (tx + ty) % 2 === 0 ? biomeFloor[0] : biomeFloor[1];
-        ctx.fillRect(x, y, tileSz, tileSz);
-      }
+      const parity = (tx + ty) & 1;
+      const x = Math.round(tx * tileSz - camX);
+      const y = Math.round(ty * tileSz - camY);
+      ctx.drawImage(wall ? pixSet.w[parity] : pixSet.f[parity], x, y, tileSz, tileSz);
     }
   }
+  ctx.imageSmoothingEnabled = prevSm;
 
   // 1.5 Teleports — ALL look identical (purple portal), good and trap are indistinguishable
   for (const tp of gs.mapData.teleports || []) {
@@ -3236,78 +3365,52 @@ function render(ctx, gs) {
       ctx.globalAlpha = 1;
     }
 
-    ctx.fillStyle = e.flash > 0 ? '#FFFFFF' : (e.elite ? e.elite.color : baseColor);
-    ctx.beginPath();
-    ctx.arc(e.x - camX, e.y - camY, e.r, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = e.elite ? '#FFFFFF' : '#E8E2D0';
-    ctx.lineWidth = e.isBoss ? 4 : (e.elite ? 3 : 2);
-    ctx.beginPath();
-    ctx.arc(e.x - camX, e.y - camY, e.r, 0, Math.PI * 2);
-    ctx.stroke();
-
-    if (e.isGuard) {
-      // Guardian: armored pulsing ring + label
-      const bt2 = performance.now() / 1000;
-      ctx.strokeStyle = `rgba(76,175,80,${0.7 + 0.3 * Math.sin(bt2 * 3)})`;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(e.x - camX, e.y - camY, e.r + 9 + Math.sin(bt2 * 3) * 2, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = "bold 12px 'Courier New', monospace";
-      ctx.textAlign = 'center';
-      ctx.fillText('СТРАЖ', e.x - camX, e.y - camY - e.r - 20);
-      ctx.textAlign = 'start';
-    }
-
-    // Boss phase 2: pulsing enrage aura + white-hot core
-    if (e.isBoss && e.phase === 2) {
-      const bt = performance.now() / 1000;
-      const auraR = e.r + 12 + Math.sin(bt * 6) * 7;
-      ctx.strokeStyle = `rgba(255,45,77,${0.55 + 0.35 * Math.sin(bt * 6)})`;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(e.x - camX, e.y - camY, auraR, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(255,120,60,0.28)';
+    // Enemy visual: pixel-art humanoid (type keeps its color; elite keeps its aura)
+    if (e.type === 'mine') {
+      // Mines stay as hazard props: blinking core + spikes
+      const pulseR = e.r + 5 + Math.sin(performance.now() / 120) * 2;
+      ctx.fillStyle = e.flash > 0 ? '#FFFFFF' : (e.elite ? e.elite.color : baseColor);
       ctx.beginPath();
       ctx.arc(e.x - camX, e.y - camY, e.r * 0.8, 0, Math.PI * 2);
       ctx.fill();
-    }
-
-    if (e.type === 'shooter') {
-      ctx.fillStyle = 'black';
-      const sx = e.x - camX - 3;
-      const sy = e.y - camY - 8;
-      ctx.fillRect(sx, sy, 6, 6);
-    } else if (e.type === 'charger') {
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.strokeStyle = e.flash > 0 ? '#FFFFFF' : '#3A2E2A';
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(e.x - camX, e.y - camY - e.r - 6);
-      ctx.lineTo(e.x - camX - 5, e.y - camY + 2);
-      ctx.lineTo(e.x - camX + 5, e.y - camY + 2);
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2 + performance.now() / 400;
+        const px = e.x - camX + Math.cos(a) * pulseR;
+        const py = e.y - camY + Math.sin(a) * pulseR;
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
       ctx.closePath();
-      ctx.fill();
-    } else if (e.type === 'brute') {
-      ctx.strokeStyle = '#3A2E2A';
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.arc(e.x - camX, e.y - camY, e.r * 1.35, 0, Math.PI * 2);
       ctx.stroke();
-    } else if (e.type === 'summoner') {
-      ctx.strokeStyle = '#E0C8FF'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(e.x - camX, e.y - camY, e.r * 0.55, 0, Math.PI * 2); ctx.stroke();
-    } else if (e.type === 'hunter') {
-      ctx.fillStyle = '#FFE0E8';
-      ctx.beginPath(); ctx.moveTo(e.x - camX, e.y - camY - e.r - 5); ctx.lineTo(e.x - camX + 5, e.y - camY); ctx.lineTo(e.x - camX, e.y - camY + e.r + 5); ctx.lineTo(e.x - camX - 5, e.y - camY); ctx.closePath(); ctx.fill();
-    } else if (e.type === 'mine') {
-      ctx.strokeStyle = '#3A2E2A'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(e.x - camX, e.y - camY, e.r + 5 + Math.sin(performance.now() / 120) * 2, 0, Math.PI * 2); ctx.stroke();
-    } else if (e.type === 'shieldbearer') {
-      ctx.strokeStyle = '#C8FFD0'; ctx.lineWidth = 5;
-      ctx.beginPath(); ctx.arc(e.x - camX, e.y - camY, e.r * 1.25, -1.2, 1.2); ctx.stroke();
+    } else {
+      const bodyCol = e.flash > 0 ? '#FFFFFF' : (e.elite ? e.elite.color : baseColor);
+      const fr = pxFrameTick(e.x * 0.13 + e.y * 0.09);
+      const flip = gs.player.x < e.x;
+      drawPxGuy(ctx, e.x - camX, e.y - camY, e.r, bodyCol, fr, flip, e.flash > 0);
+      if (e.isBoss && e.phase === 2) {
+        const bt = performance.now() / 1000;
+        const auraR = e.r * 1.35 + Math.sin(bt * 6) * 6;
+        ctx.strokeStyle = `rgba(255,45,77,${0.55 + 0.35 * Math.sin(bt * 6)})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(e.x - camX, e.y - camY, auraR, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      if (e.isGuard) {
+        const bt2 = performance.now() / 1000;
+        ctx.strokeStyle = `rgba(76,175,80,${0.7 + 0.3 * Math.sin(bt2 * 3)})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(e.x - camX, e.y - camY, e.r + 10 + Math.sin(bt2 * 3) * 2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = "bold 12px 'Courier New', monospace";
+        ctx.textAlign = 'center';
+        ctx.fillText('СТРАЖ', e.x - camX, e.y - camY - e.r - 20);
+        ctx.textAlign = 'start';
+      }
     }
 
     if (e.objectiveTarget) {
@@ -3317,11 +3420,11 @@ function render(ctx, gs) {
       ctx.fillText('ЦЕЛЬ', e.x - camX, e.y - camY - e.r - 34); ctx.textAlign = 'start';
     }
 
-    // Health bar
+    // Health bar (lifted above the taller pixel sprite)
     if (e.maxHp > 1 && e.hp < e.maxHp) {
       const w = e.r * 2;
       const hx = e.x - camX - w / 2;
-      const hy = e.y - camY - e.r - 12;
+      const hy = e.y - camY - e.r * 1.35 - 6;
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.fillRect(hx, hy, w, 5);
       ctx.fillStyle = '#F5C518';
@@ -3354,10 +3457,9 @@ function render(ctx, gs) {
   ctx.arc(p.x - camX, p.y - camY, glowR, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = p.invuln > 0 ? '#5AD1FF' : fs.core;
-  ctx.beginPath();
-  ctx.arc(p.x - camX, p.y - camY, fs.r, 0, Math.PI * 2);
-  ctx.fill();
+  // Player body: pixel-art humanoid tinted by form/skin; blue while invulnerable
+  const pFlip = gs.aimX >= p.x;
+  drawPxGuy(ctx, p.x - camX, p.y - camY, fs.r, p.invuln > 0 ? '#5AD1FF' : fs.core, pxFrameTick(p.x * 0.07 + p.y * 0.05), pFlip, false);
 
   // Aura ring for transformed players or equipped char skins
   if ((p.form && FORM_STYLE[p.form]) || (equippedChar && equippedChar.kind === 'char')) {
@@ -3642,20 +3744,24 @@ function renderMinimap(gs) {
   const col = (r, g, b) => (0xFF << 24) | (b << 16) | (g << 8) | r;
   const darkBg = col(8, 10, 15);
   for (let i = 0; i < mSz * mSz; i++) pxBuf[i] = darkBg;
-  const wallVis = col(74, 59, 51), wallSeen = col(40, 31, 27);
-  const floorVis = col(37, 45, 60), floorSeen = col(20, 25, 34);
+  // Two-tone palettes per state: a 2x2 "macro pixel" checker gives a pixel-art look
+  const wallVis = [col(84, 66, 56), col(60, 47, 41)];
+  const wallSeen = [col(47, 37, 33), col(33, 26, 23)];
+  const floorVis = [col(47, 57, 75), col(31, 39, 52)];
+  const floorSeen = [col(25, 30, 41), col(17, 21, 29)];
   const nW = Math.max(1, Math.round(tileW)), nH = Math.max(1, Math.round(tileH));
   for (let ty = 0; ty < MAP_H; ty++) {
     for (let tx = 0; tx < MAP_W; tx++) {
       const idx = ty * MAP_W + tx;
       if (!exA[idx]) continue;
       const vis = inView(tx, ty);
-      const c = gs.mapData.grid[idx] === 1 ? (vis ? wallVis : wallSeen) : (vis ? floorVis : floorSeen);
+      const pal2 = gs.mapData.grid[idx] === 1 ? (vis ? wallVis : wallSeen) : (vis ? floorVis : floorSeen);
       const x0 = Math.round(tx * tileW), y0 = Math.round(ty * tileH);
       const x1 = Math.min(mSz, x0 + nW), y1 = Math.min(mSz, y0 + nH);
       for (let yy = y0; yy < y1; yy++) {
         const row = yy * mSz;
-        for (let xx = x0; xx < x1; xx++) pxBuf[row + xx] = c;
+        const cy = (yy >> 1) & 1;
+        for (let xx = x0; xx < x1; xx++) pxBuf[row + xx] = pal2[cy ^ ((xx >> 1) & 1)];
       }
     }
   }
@@ -3666,23 +3772,23 @@ function renderMinimap(gs) {
   const py = (gs.player.y / TILE) * tileH;
   const mmSkin = SKINS[getEquippedSkin()];
   ctx.fillStyle = mmSkin && mmSkin.kind === 'char' ? mmSkin.minimap : '#F5C518';
-  ctx.beginPath();
-  ctx.arc(px, py, 3, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.fillRect(Math.round(px) - 3, Math.round(py) - 3, 7, 7);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(Math.round(px) - 4, Math.round(py) - 4, 1, 9);
+  ctx.fillRect(Math.round(px) + 3, Math.round(py) - 4, 1, 9);
+  ctx.fillRect(Math.round(px) - 4, Math.round(py) - 4, 9, 1);
+  ctx.fillRect(Math.round(px) - 4, Math.round(py) + 3, 9, 1);
 
   // Floor exit on minimap — revealed once explored (teleports stay hidden — part of the mystery)
   if (gs.mapData.exit && exA[Math.floor(gs.mapData.exit.y / TILE) * MAP_W + Math.floor(gs.mapData.exit.x / TILE)]) {
     const exx = (gs.mapData.exit.x / TILE) * tileW;
     const exy = (gs.mapData.exit.y / TILE) * tileH;
     ctx.fillStyle = '#5AFFA0';
-    ctx.beginPath();
-    ctx.arc(exx, exy, 4, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(Math.round(exx) - 4, Math.round(exy) - 4, 9, 9);
     ctx.strokeStyle = 'rgba(90,255,160,0.8)';
     ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(exx, exy, 6 + Math.sin(Date.now() / 300) * 1.5, 0, Math.PI * 2);
-    ctx.stroke();
+    const exP = 6 + Math.sin(Date.now() / 300) * 1.5;
+    ctx.strokeRect(Math.round(exx) - exP, Math.round(exy) - exP, exP * 2, exP * 2);
   }
 
   // Chests (gold reward dots) — revealed once explored
@@ -3692,9 +3798,7 @@ function renderMinimap(gs) {
     const chx = (ch.x / TILE) * tileW;
     const chy = (ch.y / TILE) * tileH;
     ctx.fillStyle = '#F5C518';
-    ctx.beginPath();
-    ctx.arc(chx, chy, 2.5, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(Math.round(chx) - 2, Math.round(chy) - 2, 5, 5);
   }
 
   // Objective beacons are revealed only after exploring their tile.
@@ -3703,21 +3807,21 @@ function renderMinimap(gs) {
     if (!exA[bty * MAP_W + btx]) continue;
     const bx = (beacon.x / TILE) * tileW, by = (beacon.y / TILE) * tileH;
     ctx.fillStyle = beacon.active ? '#5AFFA0' : '#5AD1FF';
-    ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(Math.round(bx) - 3, Math.round(by) - 3, 6, 6);
     ctx.strokeStyle = beacon.active ? '#5AFFA0' : '#5AD1FF';
-    ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(bx, by, 5, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 1; ctx.strokeRect(Math.round(bx) - 5, Math.round(by) - 5, 10, 10);
   }
 
   // Optional risk/reward points — revealed by exploration, never teleports.
   for (const chest of gs.mapData.cursedChests || []) {
     if (chest.used || !exA[Math.floor(chest.y / TILE) * MAP_W + Math.floor(chest.x / TILE)]) continue;
     ctx.fillStyle = '#FF3D00';
-    ctx.beginPath(); ctx.arc((chest.x / TILE) * tileW, (chest.y / TILE) * tileH, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(Math.round((chest.x / TILE) * tileW) - 2, Math.round((chest.y / TILE) * tileH) - 2, 5, 5);
   }
   for (const altar of gs.mapData.altars || []) {
     if (!exA[Math.floor(altar.y / TILE) * MAP_W + Math.floor(altar.x / TILE)]) continue;
     ctx.fillStyle = altar.used ? '#5A554B' : '#FFD700';
-    ctx.beginPath(); ctx.arc((altar.x / TILE) * tileW, (altar.y / TILE) * tileH, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(Math.round((altar.x / TILE) * tileW) - 2, Math.round((altar.y / TILE) * tileH) - 2, 5, 5);
   }
 
   // Enemies — only visible while their tile is in your current view
@@ -3728,9 +3832,7 @@ function renderMinimap(gs) {
     const ex = (e.x / TILE) * tileW;
     const ey = (e.y / TILE) * tileH;
     ctx.fillStyle = '#FF4D6D';
-    ctx.beginPath();
-    ctx.arc(ex, ey, e.isBoss ? 4 : 2, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(Math.round(ex) - (e.isBoss ? 4 : 2), Math.round(ey) - (e.isBoss ? 4 : 2), e.isBoss ? 8 : 4, e.isBoss ? 8 : 4);
   }
 }
 
@@ -3786,6 +3888,7 @@ document.addEventListener('mousedown', (e) => {
   if (!game) return;
   const canvas = document.getElementById('gameCanvas');
   if (game.status === 'play') {
+    if (e.target && e.target.closest && e.target.closest('#joystick-area')) return;
     game.fireRequest = true;
     const rect = canvas.getBoundingClientRect();
     const scaleX = game.viewW / rect.width;
@@ -3821,13 +3924,15 @@ document.getElementById('gameCanvas').addEventListener('click', (e) => {
   }
 });
 
-// Touch joystick
+// Joystick — Pointer Events unify mouse, touch and pen; touch fallback kept for old browsers
 const joystickArea = document.getElementById('joystick-area');
 const joystickKnob = document.getElementById('joystick-knob');
-let joystickTouchId = null;
+let joystickActiveId = null;   // pointer id, 'mouse' or 'touch:<id>'
+let joystickMouseHeld = false;
 
 function processJoystick(clientX, clientY) {
   const rect = joystickArea.getBoundingClientRect();
+  if (rect.width < 4 || rect.height < 4) return; // hidden — ignore
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
   const maxR = rect.width / 2;
@@ -3850,7 +3955,8 @@ function processJoystick(clientX, clientY) {
 
 function resetJoystick() {
   joystickKnob.style.transform = 'translate(-50%, -50%)';
-  joystickTouchId = null;
+  joystickActiveId = null;
+  joystickMouseHeld = false;
   if (game) {
     game.joystickDX = 0;
     game.joystickDY = 0;
@@ -3858,32 +3964,74 @@ function resetJoystick() {
   }
 }
 
-joystickArea.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  const touch = e.changedTouches[0];
-  joystickTouchId = touch.identifier;
-  processJoystick(touch.clientX, touch.clientY);
-}, { passive: false });
+// ---- Pointer Events (modern desktop + mobile) ----
+if (window.PointerEvent) {
+  joystickArea.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (joystickActiveId !== null) return;
+    joystickActiveId = 'ptr:' + e.pointerId;
+    joystickMouseHeld = e.pointerType === 'mouse';
+    try { joystickArea.setPointerCapture(e.pointerId); } catch (err) {}
+    processJoystick(e.clientX, e.clientY);
+  }, { passive: false });
 
-joystickArea.addEventListener('touchmove', (e) => {
-  e.preventDefault();
-  for (const touch of e.changedTouches) {
-    if (touch.identifier === joystickTouchId) {
-      processJoystick(touch.clientX, touch.clientY);
+  joystickArea.addEventListener('pointermove', (e) => {
+    if (joystickActiveId !== 'ptr:' + e.pointerId) return;
+    e.preventDefault();
+    processJoystick(e.clientX, e.clientY);
+  }, { passive: false });
+
+  const endPtr = (e) => {
+    if (joystickActiveId !== 'ptr:' + e.pointerId) return;
+    resetJoystick();
+  };
+  joystickArea.addEventListener('pointerup', endPtr, { passive: false });
+  joystickArea.addEventListener('pointercancel', endPtr, { passive: false });
+} else {
+  // ---- Legacy touch (no PointerEvent support) ----
+  joystickArea.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (joystickActiveId !== null) return;
+    const touch = e.changedTouches[0];
+    joystickActiveId = 'touch:' + touch.identifier;
+    processJoystick(touch.clientX, touch.clientY);
+  }, { passive: false });
+
+  joystickArea.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    for (const touch of e.changedTouches) {
+      if (joystickActiveId === 'touch:' + touch.identifier) {
+        processJoystick(touch.clientX, touch.clientY);
+      }
     }
-  }
-}, { passive: false });
+  }, { passive: false });
 
-joystickArea.addEventListener('touchend', (e) => {
-  for (const touch of e.changedTouches) {
-    if (touch.identifier === joystickTouchId) {
-      resetJoystick();
+  joystickArea.addEventListener('touchend', (e) => {
+    for (const touch of e.changedTouches) {
+      if (joystickActiveId === 'touch:' + touch.identifier) {
+        resetJoystick();
+      }
     }
-  }
-}, { passive: false });
+  }, { passive: false });
 
-joystickArea.addEventListener('touchcancel', resetJoystick, { passive: false });
-document.addEventListener('touchcancel', resetJoystick, { passive: false });
+  joystickArea.addEventListener('touchcancel', resetJoystick, { passive: false });
+  document.addEventListener('touchcancel', resetJoystick, { passive: false });
+
+  // Mouse fallback (old browsers) — desktop users can drag the stick with the mouse
+  joystickArea.addEventListener('mousedown', (e) => {
+    if (joystickActiveId !== null) return;
+    e.preventDefault();
+    joystickActiveId = 'mouse';
+    joystickMouseHeld = true;
+    processJoystick(e.clientX, e.clientY);
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (joystickMouseHeld) processJoystick(e.clientX, e.clientY);
+  });
+  document.addEventListener('mouseup', () => {
+    if (joystickMouseHeld) resetJoystick();
+  });
+}
 
 // Touch aim + fire on canvas
 let fireTouchId = null;
@@ -4900,7 +5048,7 @@ function gameLoop(timestamp) {
       game.joystickDX = dx / mag;
       game.joystickDY = dy / mag;
       game.joystickActive = true;
-    } else if (!joystickTouchId) {
+    } else if (!joystickActiveId && !joystickMouseHeld) {
       // Only reset joystick if no touch is active
       game.joystickActive = false;
       game.joystickDX = 0;
